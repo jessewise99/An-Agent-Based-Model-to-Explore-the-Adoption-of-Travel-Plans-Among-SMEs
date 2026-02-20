@@ -1,0 +1,5 @@
+import mesa
+print(mesa.__version__)
+from mesa import Agent
+import inspect
+print(inspect.getsource(Agent.__init__))

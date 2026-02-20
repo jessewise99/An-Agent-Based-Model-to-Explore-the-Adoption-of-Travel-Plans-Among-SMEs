@@ -1,0 +1,33 @@
+# Secrets
+**/*recovery-codes*.txt
+**/*token*.txt
+**/*secret*.txt
+
+# Secrets and recovery codes
+GIT/github-recovery-codes.txt
+**/*recovery-codes*.txt
+
+
+__pycache__/
+*.pyc
+
+# Virtual environments
+venv/
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Batch results
+*.rds
+
+# docs
+*.pdf
