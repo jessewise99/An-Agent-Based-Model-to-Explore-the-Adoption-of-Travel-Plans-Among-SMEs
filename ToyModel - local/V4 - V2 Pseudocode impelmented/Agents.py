@@ -55,8 +55,16 @@ class FirmAgent(Agent):
         postcode_weights=[0.056, 0.0905, 0.1853, 0.1078, 0.0259, 0.0603, 0.1853, 0.0819, 0.0431, 0.0862, 0.0777] # same here
 
 
-        network_cats=[None, "Chamber of Commerce", "FSB","BACP", "CII",  "UK Finance"] # Doubel check these
-        network_weights=[0.67, 0.103, 0.0689,  0.0689,  0.0689,  0.0203]
+        network_cats=[None, "Chamber of Commerce", "FSB","BACP", "CII", "CHSA", "UK Finance", "Other"] # Other are less common networks (only reported once in the sample)
+        network_weights=[0.75, 0.103, 0.0689,  0.0345,  0.0345,  0.0345, 0.0345, 0.1724]
+
+        draw = self.model.random.choices(network_cats, weights=network_weights, k=1)[0]
+
+        if draw == "Other":
+            # Unique network label, guarantees no one else shares it
+            self.network = f"Other_{self.unique_id}"
+        else:
+            self.network = draw
 
         size_cats = ["10-19", "20-49","50-99", "100-249"]
         size_weights=[0.16, 0.28, 0.20, 0.36]
