@@ -55,16 +55,24 @@ class FirmAgent(Agent):
         postcode_weights=[0.056, 0.0905, 0.1853, 0.1078, 0.0259, 0.0603, 0.1853, 0.0819, 0.0431, 0.0862, 0.0777] # same here
 
 
-        network_cats=[None, "Chamber of Commerce", "FSB","BACP", "CII", "CHSA", "UK Finance", "Other"] # Other are less common networks (only reported once in the sample)
-        network_weights=[0.75, 0.103, 0.0689,  0.0345,  0.0345,  0.0345, 0.0345, 0.1724]
-
-        draw = self.model.random.choices(network_cats, weights=network_weights, k=1)[0]
-
-        if draw == "Other":
-            # Unique network label, guarantees no one else shares it
-            self.network = f"Other_{self.unique_id}"
-        else:
-            self.network = draw
+        # network_cats=[None, "Chamber of Commerce", "FSB","BACP", "CII", "CHSA", "UK Finance", "ABC", "ARLA", "ATOL", "Age Care UK", "Aging Better UK",
+        #               "Alzheimers Society", "American Bankers Association", "Aspire", "Association of Cycle Retailers", "Association of Professional Builders",
+        #               "BAFTA", "BEN", "Bank of England Regulatory and Industry Forums", "Boots", "British Standards Institution", "Business Network International",
+        #               "Chartered Banker Institute", "Clinical Board Meeting","Constructionline", "Deeside Decarbonisation Forum", "Entrepreneurs Circle", 
+        #               "Essex Care Association", "European Arenas Association", "Federation of Master Builders","Gambica","General Teaching Council for Scotland",
+        #               "HEP Hounslow Education Partnership", "IMAD", "IT Association", "Imperial Society of Teachers of Dancing", "Insurance Information Institute", 
+        #               "International Air Transport Association", "International Dance Teachers Association", "Local Council", "Local Health Network", "Multiple / Miscellaneous",
+        #               "National Association of Estate Agents",  "National Care Association", "National House Building Council", "Northern Ireland Hotels Federation",
+        #               "Nurture UK", "Ofqual", "Paradigm", "Passivhaus Institut", "Passivhaus Trust", "Payment Systems Regulator", "PiXL", "Public Relations and Communications Association",
+        #               "RNIC", "Recruitment & Employment Confederation", "Reigate Business Guild", "Risk Management Association","Road Haulage Association", 
+        #               "Royal College of Anaesthetists", "Russo-British Chamber of Commerce", "Society of Authors","Southern Farmers Network", 
+        #               "The Chartered Institute of Personnel and Development", "The Tile Association","Trade Unions & Collaboration of Schools", "UK Arts Network", 
+        #               "UK Contact Centre Forum", "UK Proptech", "UK Weighing Federation", "Visit Belfast", "Wales Area Entertainment Complexes", "Welsh Arts Council",
+        #               "West London Business Partnership"] # Commenting this out while i fix the problem of joint network memberships 
+        network_cats=[None, "Chamber of Commerce", "FSB","BACP", "CII", "CHSA"] 
+        #network_weights=[0.7586, 0.1202, 0.0689,  0.0345,  0.0345,  0.0345, 0.0345, 0.01724]
+        network_weights=[0.7074, 0.1202, 0.0689,  0.0345,  0.0345,  0.0345]
+        # Approx 25% are in a network. Often more than one network at a time. network_cats lists the cleaned names. This will be something I need to change
 
         size_cats = ["10-19", "20-49","50-99", "100-249"]
         size_weights=[0.16, 0.28, 0.20, 0.36]
@@ -223,6 +231,10 @@ class FirmAgent(Agent):
             if prev_stage in non_adopted and curr_stage in adopted:
                 self.beliefs["motivations"] += self.competitor_inference_increment_eff
                 self.beliefs["awareness"]=1
+
+        for prev_stage, curr_stage in self.competitor_adoptions:
+            if prev_stage in adopted and curr_stage in non_adopted:
+                self.beliefs["motivations"] -= self.competitor_inference_increment_eff
 
     def update_knowledge_fully(self):
         for b in self.beliefs:  # Loop through all belief dimensions
