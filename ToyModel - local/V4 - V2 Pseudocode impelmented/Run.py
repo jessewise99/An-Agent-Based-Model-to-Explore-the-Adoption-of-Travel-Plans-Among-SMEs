@@ -71,6 +71,22 @@ plt.xlabel("Probability of adopting a workplace travel plan")
 plt.ylabel("Number of agents")
 plt.show()
 
+# Plot histogram of perceived NBs at beginning
+plt.figure(figsize=(16, 10))
+sns.histplot(beginning_data["Perceived Net Benefit"], bins=20)
+plt.title("Distribution of Perceived Net Benefit of Adoption at Beginning of Simulation")
+plt.xlabel("Perceived Net Benefit of adopting a workplace travel plan")
+plt.ylabel("Number of agents")
+plt.show()
+
+# Plot histogram of perceived NBs at end
+plt.figure(figsize=(16, 10))
+sns.histplot(final_data["Perceived Net Benefit"], bins=20)
+plt.title("Distribution of  Perceived Net Benefit of Adoption at Final Tick")
+plt.xlabel("Perceived Net Benefit of adopting a workplace travel plan")
+plt.ylabel("Number of agents")
+plt.show()
+
 # --- Adopters in the network ---
 
 # Access the underlying graph
