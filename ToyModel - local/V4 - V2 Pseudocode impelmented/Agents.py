@@ -10,6 +10,7 @@
 # Note: I have used Chat GPT to help me learn how to use Mesa, and to write this code. All errors are my own. 
 import random  # Required for belief initialisation
 import math    # Required for sigmoid/logit
+import numpy as np # Required for log function
 from mesa import Agent  # Using Agent which is more flexible than FixedAgent. Correct base class for custom agents
 
 
@@ -76,6 +77,7 @@ class FirmAgent(Agent):
 
         size_cats = ["10-19", "20-49","50-99", "100-249"]
         size_weights=[0.16, 0.28, 0.20, 0.36]
+        self.SIZE_MIDPOINT = {"10-19": 14.5, "20-49": 34.5, "50-99": 74.5, "100-249": 174.5}
 
         def draw_size_from_bin(bin_label: str) -> int:
             lo_str, hi_str = bin_label.split("-")
@@ -273,9 +275,13 @@ class FirmAgent(Agent):
         ) # Feasible = True if all constraints  are above the minimum thresholds, otherwise it is false
 
     def update_prob_adoption(self):
+        size_mid = self.SIZE_MIDPOINT.get(self.size_cat) # Get the midpoint of the size bin
+        if size_mid is None: # For debuggin
+            raise ValueError(f"Unknown size category: {self.size}")
+
         if self.feasible:                                                            # If the WTP is perceived as feasible, then:
-            perceived_net_benefit = self.model.obj_net_benefit_min + (                   # Calculate the perceived net benefit of adopting a WTP
-                (self.model.obj_net_benefit_max - self.model.obj_net_benefit_min) * (self.beliefs["motivations"] - self.beliefs["perceivedBarriers"]))  # estimated net benefit is equal to the minimum plausible net benefit plus a range of plausible net benefit values that depends on the perception of costs and benefits of adoption (which are scaled between 0 and 1). 
+            perceived_net_benefit = self.model.obj_net_benefit_min + (                  # Calculate the perceived net benefit of adopting a WTP
+            (self.model.obj_net_benefit_max - self.model.obj_net_benefit_min) * (self.beliefs["motivations"] - ((1.5 +  math.log(size_mid, 0.01))*self.beliefs["perceivedBarriers"])))  # estimated net benefit is equal to the minimum plausible net benefit plus a range of plausible net benefit values that depends on the perception of costs and benefits of adoption (which are scaled between 0 and 1). 
             self.prob_adoption = 1 / (1 + math.exp(-perceived_net_benefit))          # The logit (sigmoidal) function converts the perceived net benefit into a probability of adoption
         else:
             self.prob_adoption = 0                                                   # If a WTP is not perceived as feasible, then the probability of adoption is 0
