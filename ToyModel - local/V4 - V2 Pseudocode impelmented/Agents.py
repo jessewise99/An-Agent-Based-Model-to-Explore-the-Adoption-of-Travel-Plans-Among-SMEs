@@ -165,6 +165,9 @@ class FirmAgent(Agent):
         self.obj_net_benefit_min = model.obj_net_benefit_min
         self.obj_net_benefit_max = model.obj_net_benefit_max
 
+        self.perceived_net_benefit = None # This is also to help me debug
+
+
 
     def step(self):
         self.prev_adoption_stage = self.adoption_stage # Store this adoption stage to be used in observe_network
@@ -280,9 +283,9 @@ class FirmAgent(Agent):
             raise ValueError(f"Unknown size category: {self.size}")
 
         if self.feasible:                                                            # If the WTP is perceived as feasible, then:
-            perceived_net_benefit = self.model.obj_net_benefit_min + (                  # Calculate the perceived net benefit of adopting a WTP
+            self.perceived_net_benefit = self.model.obj_net_benefit_min + (                  # Calculate the perceived net benefit of adopting a WTP
             (self.model.obj_net_benefit_max - self.model.obj_net_benefit_min) * (self.beliefs["motivations"] - ((1.5 +  math.log(size_mid, 0.01))*self.beliefs["perceivedBarriers"])))  # estimated net benefit is equal to the minimum plausible net benefit plus a range of plausible net benefit values that depends on the perception of costs and benefits of adoption (which are scaled between 0 and 1). 
-            self.prob_adoption = 1 / (1 + math.exp(-perceived_net_benefit))          # The logit (sigmoidal) function converts the perceived net benefit into a probability of adoption
+            self.prob_adoption = 1 / (1 + math.exp(-0.0066*(self.perceived_net_benefit-800)))          # The logit (sigmoidal) function converts the perceived net benefit into a probability of adoption
         else:
             self.prob_adoption = 0                                                   # If a WTP is not perceived as feasible, then the probability of adoption is 0
 
