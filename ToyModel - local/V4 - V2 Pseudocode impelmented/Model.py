@@ -22,6 +22,7 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
 
     All agents have some capability, opportunity, and motivation to adopt a workplace travel plan - defined by 6 subdomains + awareness.
     At each time step they learn from their peers, and update their own beliefs, including feasibility (resources, knowledge, access to PT, and organisational readiness) and their motivation (=costs-benefits).
+    They learn different from strong ties (peers) and weak ties (competitors). I just assume that those in a network have strong ties, while you have weak ties with your neighbours.
     They re-assess what level of adoption is right for them, and change their status accordingly.
     We want to test whether this theory can explain observed adoption patterns.
         
@@ -69,13 +70,13 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
         self.obj_net_benefit_min = obj_net_benefit_min
         self.obj_net_benefit_max = obj_net_benefit_max
 
-        # 1. Create agents first (they sample their own attributes inside FirmAgent)
+        # 1. Create agents first (they sample their own attributes inside FirmAgent which is my definintion of an agent)
         created_agents = [FirmAgent(self) for _ in range(self.num_agents)]
 
-        # 2. Build network from these agents' attributes
+        # 2. Build networkX graph from these agents' attributes
         self.G = self.build_network_from_agents(created_agents)
 
-        # 3. Create grid from the network
+        # 3. Create grid from the network. Mesa creates a network based “grid” wrapper around my networkX graph, it doesn't change it. This provides methods like get_neighbors and handles agent placement on nodes.
         self.grid = NetworkGrid(self.G)
 
         # 4. Place each agent on its own node id
@@ -107,6 +108,7 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
             agent_reporters={
                 "Adoption Stage": "adoption_stage",
                 "Adoption Probability": "prob_adoption",
+                "Perceived Net Benefit": "perceived_net_benefit",
             },
         )
 
@@ -124,9 +126,9 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
         - edge type is peer if (same postcode and different sector) OR same network
           otherwise competitor
         """
-        G = nx.Graph()
+        G = nx.Graph() # Creates an empty undirected simple graph
 
-        # Add nodes
+        # Add nodes, storing the following attributes needed for edge creation
         for a in agents:
             G.add_node(
                 a.unique_id,
@@ -140,32 +142,35 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
         by_postcode = {}
         by_network = {}
 
-        for a in agents:
-            by_postcode.setdefault(a.postcode, []).append(a.unique_id)
-            if a.network is not None and a.network != "None":
-                by_network.setdefault(a.network, []).append(a.unique_id)
+        for a in agents: # Filling the by_postcode and by_network lists...
+            by_postcode.setdefault(a.postcode, []).append(a.unique_id) # If this postcode is not already a key, create it with an empty list, then add agent id to that postcode group
+            if a.network is not None and a.network != "None": # Then, only if the network value is not None and not the string "None"... 
+                by_network.setdefault(a.network, []).append(a.unique_id) # ... add the agent into by_network under that network label.
 
         def add_edges_within_group(id_list):
-            for i, j in itertools.combinations(id_list, 2):
-                p1, s1, n1 = G.nodes[i]["postcode"], G.nodes[i]["sector"], G.nodes[i]["network"]
-                p2, s2, n2 = G.nodes[j]["postcode"], G.nodes[j]["sector"], G.nodes[j]["network"]
+            for i, j in itertools.combinations(id_list, 2): # For each unique pair of nodes in that group, check whether they should be connected.
+                p1, n1 = G.nodes[i]["postcode"], G.nodes[i]["network"]
+                p2, n2 = G.nodes[j]["postcode"], G.nodes[j]["network"]
 
-                spatial_link = (p1 == p2)
-                network_link = (n1 is not None and n1 != "None" and n1 == n2)
-
-                if not (spatial_link or network_link):
-                    continue
-
-                if (spatial_link and s1 != s2) or network_link:
-                    edge_type = "peer"
+                spatial_link = (p1 == p2) # True if same postcode
+                network_link = (
+                    n1 is not None and n2 is not None
+                    and n1 != "None" and n2 != "None"
+                    and n1 == n2) # True if they are both in the same network
+                
+                if network_link:
+                    edge_type ="peer"
+                elif spatial_link:
+                    edge_type = "competitor" # Peer dominates if both are true
                 else:
-                    edge_type = "competitor"
+                    continue # with no link at all
 
+                # Because the same pair of firms (i & j) can be encountered in both the postcode and network grouping. 
+                # I need a rule for what to do if an edge already exists when I encounter the pair the second time....
                 if G.has_edge(i, j):
-                    existing = G.edges[i, j].get("type")
-                    if existing != edge_type:
+                    # Only ever upgrade to peer
+                    if edge_type == "peer":
                         G.edges[i, j]["type"] = "peer"
-                        G.edges[i, j]["types"] = sorted(set([existing, edge_type]))
                 else:
                     G.add_edge(i, j, type=edge_type)
 
