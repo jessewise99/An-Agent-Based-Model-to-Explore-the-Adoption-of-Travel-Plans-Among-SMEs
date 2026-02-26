@@ -128,12 +128,12 @@ class FirmAgent(Agent):
 
         ### Beliefs dictionary - subject to social learning (initial values drawn from plausible uniform distribution, but end values should match my survey data)
         self.beliefs = {
-            "motivations": self.model.random.uniform(0.1, 0.9), #The seed passed to the model controls all randomness.
-            "perceivedBarriers": self.model.random.uniform(0.1, 0.9),
-            "organisationalReadiness": self.model.random.uniform(0.1, 0.9),
-            "publicTransport": self.model.random.uniform(0.1, 0.9),
-            "resources": self.model.random.uniform(0.1, 0.9),
-            "knowledge": self.model.random.uniform(0.1, 0.9),
+            "motivations": self.model.random.uniform(0.4, 0.99), #The seed passed to the model controls all randomness. This is just random for now 
+            "perceivedBarriers": self.model.random.uniform(0.4, 0.99),
+            "organisationalReadiness": self.model.random.uniform(0.4, 0.99),
+            "publicTransport": self.model.random.uniform(0.4, 0.99),
+            "resources": self.model.random.uniform(0.4, 0.99),
+            "knowledge": self.model.random.uniform(0.4, 0.99),
             "awareness": self.model.random.choices([0, 1], weights=[0.64, 0.36])[0] # <- this distribution comes from Coleman 2000 [0.21,0.79] would give me a distribution of random 0s and 1s which match my survey
         }
 
@@ -285,7 +285,7 @@ class FirmAgent(Agent):
         if self.feasible:                                                            # If the WTP is perceived as feasible, then:
             self.perceived_net_benefit = self.model.obj_net_benefit_min + (                  # Calculate the perceived net benefit of adopting a WTP
             (self.model.obj_net_benefit_max - self.model.obj_net_benefit_min) * (self.beliefs["motivations"] - ((1.5 +  math.log(size_mid, 0.01))*self.beliefs["perceivedBarriers"])))  # estimated net benefit is equal to the minimum plausible net benefit plus a range of plausible net benefit values that depends on the perception of costs and benefits of adoption (which are scaled between 0 and 1). 
-            self.prob_adoption = 1 / (1 + math.exp(-0.0066*(self.perceived_net_benefit-800)))          # The logit (sigmoidal) function converts the perceived net benefit into a probability of adoption
+            self.prob_adoption = 1 / (1 + math.exp(-0.0196*(self.perceived_net_benefit-300)))          # The logit (sigmoidal) function converts the perceived net benefit into a probability of adoption. When trying to figure out values 1 / (1 + math.exp(-0.0066*(self.perceived_net_benefit-800))) is for 100-1500
         else:
             self.prob_adoption = 0                                                   # If a WTP is not perceived as feasible, then the probability of adoption is 0
 
@@ -316,14 +316,14 @@ class FirmAgent(Agent):
         #         allowed_stage = old_stage # Then they are not allowed to progress
         # I think because of the sigmoidal fucntion, they just skipped stage c 
 
-        if candidate_stage in {"D. Has a low efficacy WTP", "E. Has an effective WTP"} and old_stage in {"A. No intention", "B. May consider"}:
-            if self.time_in_stage < 3: # and if they have been in this stage for less than 2 ticks
-                allowed_stage = "C. Is developing a WTP"
-
+        # If you are in C, you must spend at least 3 ticks there before moving to D or E
+        if old_stage == "C. Is developing a WTP" and candidate_stage in {"D. Has a low efficacy WTP", "E. Has an effective WTP"}:
+            if self.time_in_stage < 2:
+                allowed_stage = old_stage
 
         # ImprovementLag: Must spend at least 2 ticks in D before moving to E
         if old_stage == "D. Has a low efficacy WTP" and candidate_stage == "E. Has an effective WTP": # If they have had a bad plan and want to more to a better plan
-            if self.time_in_stage < 3: # They must be in this stage for two ticks
+            if self.time_in_stage < 4: # They must be in this stage for two ticks
                 allowed_stage = old_stage # Then they are not allowed to progress
 
         # 3. Commit the stage
