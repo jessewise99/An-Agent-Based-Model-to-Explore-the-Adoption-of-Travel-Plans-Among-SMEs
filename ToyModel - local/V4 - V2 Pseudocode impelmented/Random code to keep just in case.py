@@ -138,3 +138,44 @@
         #             G.add_edge(i, j, type=edge_type)  # Add edge with type metadata
 
         # return G
+
+
+
+        ### Figuring out what is going on here 
+                def add_edges_within_group(id_list):
+            for i, j in itertools.combinations(id_list, 2):
+                p1, n1 = G.nodes[i]["postcode"], G.nodes[i]["network"]
+                p2, n2 = G.nodes[j]["postcode"], G.nodes[j]["network"]
+
+                spatial_link = (p1 == p2)
+                network_link = (
+                    n1 is not None and n2 is not None
+                    and n1 != "None" and n2 != "None"
+                    and n1 == n2)
+                
+                if network_link:
+                    edge_type ="peer"
+                elif spatial_link:
+                    edge_type = "competitor"
+                else:
+                    continue # with no link at all
+
+                if G.has_edge(i, j):
+                    existing = G.edges[i, j].get("type")
+                    if existing != edge_type:
+                        G.edges[i, j]["type"] = "peer"
+                        G.edges[i, j]["types"] = sorted(set([existing, edge_type]))
+                else:
+                    G.add_edge(i, j, type=edge_type)
+
+        # Connect within each postcode group
+        for ids in by_postcode.values():
+            if len(ids) > 1:
+                add_edges_within_group(ids)
+
+        # Connect within each business network group
+        for ids in by_network.values():
+            if len(ids) > 1:
+                add_edges_within_group(ids)
+
+        return G

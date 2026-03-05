@@ -215,7 +215,7 @@ class FirmAgent(Agent):
             self.perceivedPeerAdoption = 0.0
             return
 
-        adopted_stages = {"D. Has a low efficacy WTP", "E. Has an effective WTP"}
+        adopted_stages = {"D. Has a WTP"}
 
         num_with_plan = 0
         for nid in neighbour_ids:
@@ -230,7 +230,7 @@ class FirmAgent(Agent):
 
     def update_knowledge_partially(self):
         non_adopted = {"A. No intention", "B. May consider"}
-        adopted = {"C. Is developing a WTP","D. Has a low efficacy WTP", "E. Has an effective WTP"}
+        adopted = {"C. Is developing a WTP","D. Has a WTP"}
 
         for prev_stage, curr_stage in self.competitor_adoptions:
             if prev_stage in non_adopted and curr_stage in adopted:
@@ -281,11 +281,14 @@ class FirmAgent(Agent):
         size_mid = self.SIZE_MIDPOINT.get(self.size_cat) # Get the midpoint of the size bin
         if size_mid is None: # For debuggin
             raise ValueError(f"Unknown size category: {self.size}")
-
+        
+        # Calculate the perceived net benefit of adopting a WTP
+        self.perceived_net_benefit = self.model.obj_net_benefit_min + (
+            (self.model.obj_net_benefit_max - self.model.obj_net_benefit_min) * (
+                (self.beliefs["motivations"] - (self.beliefs["perceivedBarriers"])))) # estimated net benefit is equal to the minimum plausible net benefit plus a range of plausible net benefit values that depends on the perception of costs and benefits of adoption (which are scaled between 0 and 1). 
+        
         if self.feasible:                                                            # If the WTP is perceived as feasible, then:
-            self.perceived_net_benefit = self.model.obj_net_benefit_min + (                  # Calculate the perceived net benefit of adopting a WTP
-            (self.model.obj_net_benefit_max - self.model.obj_net_benefit_min) * (self.beliefs["motivations"] - ((1.5 +  math.log(size_mid, 0.01))*self.beliefs["perceivedBarriers"])))  # estimated net benefit is equal to the minimum plausible net benefit plus a range of plausible net benefit values that depends on the perception of costs and benefits of adoption (which are scaled between 0 and 1). 
-            self.prob_adoption = 1 / (1 + math.exp(-0.0196*(self.perceived_net_benefit-300)))          # The logit (sigmoidal) function converts the perceived net benefit into a probability of adoption. When trying to figure out values 1 / (1 + math.exp(-0.0066*(self.perceived_net_benefit-800))) is for 100-1500
+            self.prob_adoption = 1 / (1 + math.exp(0.035*(self.perceived_net_benefit-329.5)))          # The logit (sigmoidal) function converts the perceived net benefit into a probability of adoption for a range of NB from 246 to 413. Which is what we want when size does not influence
         else:
             self.prob_adoption = 0                                                   # If a WTP is not perceived as feasible, then the probability of adoption is 0
 
@@ -301,30 +304,19 @@ class FirmAgent(Agent):
             candidate_stage  = "B. May consider"
         elif p < 0.79:
             candidate_stage  = "C. Is developing a WTP"
-        elif p < 0.85:
-            candidate_stage  = "D. Has a low efficacy WTP"
         else:
-            candidate_stage  = "E. Has an effective WTP"
+            candidate_stage  = "D. Has a WTP"
+
             # Agents are allowed to regress to lower stages of adoption
 
         # 2. Check time lag rules (i.e., block transitions until they have had time to transition)
         allowed_stage = candidate_stage 
 
         # DevelopersLag: Must spend at least 2 ticks in development before moving to adoption
-        # if old_stage == "C. Is developing a WTP" and candidate_stage in {"D. Has a low efficacy WTP", "E. Has an effective WTP"}: # If they have been developing a WTP and their candidate stage suggests adoption 
-        #     if self.time_in_stage < 2: # and if they have been in this stage for less than 2 ticks
-        #         allowed_stage = old_stage # Then they are not allowed to progress
-        # I think because of the sigmoidal fucntion, they just skipped stage c 
-
         # If you are in C, you must spend at least 3 ticks there before moving to D or E
-        if old_stage == "C. Is developing a WTP" and candidate_stage in {"D. Has a low efficacy WTP", "E. Has an effective WTP"}:
+        if old_stage == "C. Is developing a WTP" and candidate_stage in {"D. Has a WTP"}:
             if self.time_in_stage < 2:
                 allowed_stage = old_stage
-
-        # ImprovementLag: Must spend at least 2 ticks in D before moving to E
-        if old_stage == "D. Has a low efficacy WTP" and candidate_stage == "E. Has an effective WTP": # If they have had a bad plan and want to more to a better plan
-            if self.time_in_stage < 4: # They must be in this stage for two ticks
-                allowed_stage = old_stage # Then they are not allowed to progress
 
         # 3. Commit the stage
         self.adoption_stage = allowed_stage # The adoption stage is whatever is allowed, either the candidate stage or old stage depending on the lags

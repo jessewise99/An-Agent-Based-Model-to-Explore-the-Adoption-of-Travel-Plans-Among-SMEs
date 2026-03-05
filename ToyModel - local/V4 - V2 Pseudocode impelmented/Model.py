@@ -100,10 +100,7 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
         self.datacollector = DataCollector(
             model_reporters={
                 "Num_Developers": lambda m: m.count_adoption_stage("C. Is developing a WTP"),
-                "Num_Adopters": lambda m: (
-                    m.count_adoption_stage("D. Has a low efficacy WTP")
-                    + m.count_adoption_stage("E. Has an effective WTP")
-                ),
+                "Num_Adopters": lambda m: (m.count_adoption_stage("D. Has a WTP")),
             },
             agent_reporters={
                 "Adoption Stage": "adoption_stage",
