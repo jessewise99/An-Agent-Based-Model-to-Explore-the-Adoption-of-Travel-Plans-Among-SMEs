@@ -134,7 +134,7 @@ class FirmAgent(Agent):
             "publicTransport": self.model.random.choices([0, 0.2, 0.4, 0.6, 0.8, 1], weights=[0.05, 0.23, 0.38, 0.26, 0.07, 0.01])[0], # Coleman (2000) data used as a proxy
             "resources": self.model.random.choices([0, 0.25, 0.5, 0.75, 1], weights=[0.295, 0.265, 0.31, 0.075, 0.055])[0], # Coleman (2000) data used as a proxy
             "knowledge": self.model.random.uniform(0.01, 0.99), # No logitudinal data, has to be calibrated
-            "awareness": self.model.random.choices([0, 1], weights=[0.64, 0.36])[0] # Coleman 2000, by the final tick this distribution should match [0.21,0.79]
+            "awareness": self.model.random.choices([0, 1], weights=[0.64, 0.36])[0] # Coleman 2000
         }
 
         # Store the initial beliefs to pull toward realism baseline
