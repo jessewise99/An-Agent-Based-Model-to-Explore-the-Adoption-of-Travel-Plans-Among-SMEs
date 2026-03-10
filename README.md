@@ -8,8 +8,6 @@ colorFrom: purple
 
 colorTo: blue
 
-python\_version:3.14.0
-
 sdk: docker
 
 app\_port: 7860
