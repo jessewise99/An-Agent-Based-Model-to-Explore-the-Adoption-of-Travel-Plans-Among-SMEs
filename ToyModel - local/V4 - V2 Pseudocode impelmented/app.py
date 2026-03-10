@@ -130,13 +130,13 @@ def build_network_figure(model):
         traces.append(go.Scatter(
             x=peer_x, y=peer_y, mode="lines",
             line=dict(color="rgba(46,194,106,0.35)", width=1.2),
-            hoverinfo="none", name="Peer tie", showlegend=True,
+            hoverinfo="none", name="Strong relationship", showlegend=True,
         ))
     if competitor_x:
         traces.append(go.Scatter(
             x=competitor_x, y=competitor_y, mode="lines",
             line=dict(color="rgba(180,180,180,0.2)", width=0.6),
-            hoverinfo="none", name="Competitor tie", showlegend=True,
+            hoverinfo="none", name="Weak relationship", showlegend=True,
         ))
 
     stage_data = {s: {"x": [], "y": [], "ids": []} for s in STAGE_ORDER}
