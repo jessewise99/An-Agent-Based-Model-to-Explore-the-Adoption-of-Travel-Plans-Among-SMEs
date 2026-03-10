@@ -128,13 +128,13 @@ class FirmAgent(Agent):
 
         ### Beliefs dictionary - subject to social learning (initial values drawn from plausible uniform distribution, but end values should match my survey data)
         self.beliefs = {
-            "motivations": self.model.random.uniform(0.4, 0.99), #The seed passed to the model controls all randomness. This is just random for now 
-            "perceivedBarriers": self.model.random.uniform(0.4, 0.99),
-            "organisationalReadiness": self.model.random.uniform(0.4, 0.99),
-            "publicTransport": self.model.random.uniform(0.4, 0.99),
-            "resources": self.model.random.uniform(0.4, 0.99),
-            "knowledge": self.model.random.uniform(0.4, 0.99),
-            "awareness": self.model.random.choices([0, 1], weights=[0.64, 0.36])[0] # <- this distribution comes from Coleman 2000 [0.21,0.79] would give me a distribution of random 0s and 1s which match my survey
+            "motivations": self.model.random.uniform(0.01, 0.99), # No logitudinal data, has to be calibrated
+            "perceivedBarriers": self.model.random.uniform(0.01, 0.99), # No logitudinal data, has to be calibrated
+            "organisationalReadiness": self.model.random.choices([0, 0.25, 0.5, 0.75, 1], weights=[0.288, 0.178, 0.278, 0.118, 0.138])[0], # Coleman (2000) data used as a proxy
+            "publicTransport": self.model.random.choices([0, 0.2, 0.4, 0.6, 0.8, 1], weights=[0.05, 0.23, 0.38, 0.26, 0.07, 0.01])[0], # Coleman (2000) data used as a proxy
+            "resources": self.model.random.choices([0, 0.25, 0.5, 0.75, 1], weights=[0.295, 0.265, 0.31, 0.075, 0.055])[0], # Coleman (2000) data used as a proxy
+            "knowledge": self.model.random.uniform(0.01, 0.99), # No logitudinal data, has to be calibrated
+            "awareness": self.model.random.choices([0, 1], weights=[0.64, 0.36])[0] # Coleman 2000, by the final tick this distribution should match [0.21,0.79]
         }
 
         # Store the initial beliefs to pull toward realism baseline

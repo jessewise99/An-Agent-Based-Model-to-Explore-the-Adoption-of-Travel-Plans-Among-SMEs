@@ -8,6 +8,8 @@
 # Requires:   pip install solara mesa networkx matplotlib plotly anywidget
 # https://mesa.readthedocs.io/latest/apis/visualization.html
 # When using SolaraViz, Mesa models must be instantiated using keyword arguments only, these are values that are identifiable by specific parameter names when passed to a function
+# find it online at...
+# use pip freeze > requirements.txt to create the requirements text needed on hugging face
 
 import solara
 import solara.lab
@@ -425,7 +427,7 @@ def Page():
         with solara.Row(style="flex:1; align-items:flex-start; gap:0;"):
 
             # ── Left sidebar ─────────────────────────────────────────
-            with solara.Column(style="width:240px;min-width:240px;padding:16px;"
+            with solara.Column(style="width:360px;min-width:240px;padding:16px;"
                                      "border-right:1px solid #1e2130;gap:12px;"):
                 solara.HTML("div", unsafe_innerHTML=
                     "<div style='font-size:10px;color:#4b5563;"
