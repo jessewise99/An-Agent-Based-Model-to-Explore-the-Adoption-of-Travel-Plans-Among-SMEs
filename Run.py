@@ -35,7 +35,6 @@ model = AdoptionModel(
     learning_rate = 0.9,									# This is the rate at which firms learn from other firms
     competitor_inference_increment=0.05, # This is how much an agent's perceived benefits increases or decreases depening on their compeitors adoption stage. (at the moment = to learning rate* learning)
     realism_pull_constraints = 0.02,								# For time and money constraints set the realism pull as higher for these very objective concepts
-    realism_pull_sociallyInfluencedVars = 0.001,						# For benefits, costs, and knowledge, the realism pull is lower as these are more subjective likely to be swayed by social influence
     organisationalReadiness_min = 0.4367,										# This is the organisational readiness threshold, if exceeded they may be able to adopt
     publicTransport_min = 0.5883,										# This is the public transport threshold, if exceeded they may be able to adopt
     resource_min = 0.5683,										# This is resource threshold, if exceeded they may be able to adopt
@@ -46,7 +45,7 @@ model = AdoptionModel(
     shock_parameters = None#{"accreditationAward": 0.25} # These are the strengths of the policies, it needs to be a dictionary. It will look like this {"caseStudy": 0.3, "subsidy": 0.2}
     )  # Create an instance of the AdoptionModel with the above parameters.
 
-T =  10 										# Set how many  time steps the program will run for
+T =  336 										# The program runs for 336 ticks, i.e. 28 years at 12 months a year because I have data from 1997 to 2025.
 
 ######################################################################### Visualisations #########################################################################
 

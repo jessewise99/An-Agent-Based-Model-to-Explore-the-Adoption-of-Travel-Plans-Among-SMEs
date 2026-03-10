@@ -79,13 +79,12 @@ def record_step(model):
 # ─────────────────────────────────────────────
 #  Model factory
 # ─────────────────────────────────────────────
-def make_model(n_agents, learning_rate, r_soc, r_con,
+def make_model(n_agents, learning_rate, r_con,
                or_min, pt_min, r_min, k_min,
                obj_min, obj_max, comp_inc):
     return AdoptionModel(
         num_agents=n_agents,
         learning_rate=learning_rate,
-        realism_pull_sociallyInfluencedVars=r_soc,
         realism_pull_constraints=r_con,
         obj_net_benefit_min=obj_min,
         obj_net_benefit_max=obj_max,
@@ -353,7 +352,6 @@ def AgentInspector(step: int):
 def Page():
     n_agents,      set_n_agents      = solara.use_state(100)
     learning_rate, set_learning_rate = solara.use_state(0.9)
-    r_soc,         set_r_soc         = solara.use_state(0.001)
     r_con,         set_r_con         = solara.use_state(0.02)
     or_min,        set_or_min        = solara.use_state(0.4367)
     pt_min,        set_pt_min        = solara.use_state(0.5883)
@@ -365,7 +363,7 @@ def Page():
     init_done,     set_init_done     = solara.use_state(False)
 
     def initialise():
-        m = make_model(n_agents, learning_rate, r_soc, r_con,
+        m = make_model(n_agents, learning_rate, r_con,
                        or_min, pt_min, r_min, k_min,
                        obj_min, obj_max, comp_inc)
         record_step(m)   # capture step-0 state
@@ -420,7 +418,7 @@ def Page():
           <span style='font-size:18px;font-weight:700;color:#f4f4f5;
                        letter-spacing:0.04em'>WTP ADOPTION MODEL</span>
           <span style='font-size:11px;color:#4b5563;letter-spacing:0.08em'>
-            ABM · Mesa 3 · Workplace Travel Plans
+            Agent Based Model of Workplace Travel Plans · Made useing MESA · Each step represents 1 month, running for up to 28 years (336 ticks)
           </span>
         </div>""")
 
@@ -434,22 +432,20 @@ def Page():
                     "letter-spacing:0.1em;margin-bottom:4px'>PARAMETERS</div>")
 
                 solara.InputInt("Agents", value=n_agents, on_value=set_n_agents)
-                solara.SliderFloat("Learning rate", value=learning_rate,
+                solara.SliderFloat("Social learning rate (%)", value=learning_rate,
                                    min=0.0, max=1.0, step=0.05, on_value=set_learning_rate)
-                solara.SliderFloat("Realism pull (subjective)", value=r_soc,
-                                   min=0.0, max=0.1, step=0.001, on_value=set_r_soc)
-                solara.SliderFloat("Realism pull (objective)", value=r_con,
+                solara.SliderFloat("Learning from observation (Set amount)", value=comp_inc,
+                                   min=0.0, max=0.2, step=0.005, on_value=set_comp_inc)
+                solara.SliderFloat("Realism pull", value=r_con,
                                    min=0.0, max=0.1, step=0.001, on_value=set_r_con)
-                solara.SliderFloat("Org readiness min", value=or_min,
+                solara.SliderFloat("Organisational readiness min", value=or_min,
                                    min=0.0, max=1.0, step=0.01, on_value=set_or_min)
-                solara.SliderFloat("Public transport min", value=pt_min,
+                solara.SliderFloat("Public transport access min", value=pt_min,
                                    min=0.0, max=1.0, step=0.01, on_value=set_pt_min)
                 solara.SliderFloat("Resource min", value=r_min,
                                    min=0.0, max=1.0, step=0.01, on_value=set_r_min)
                 solara.SliderFloat("Knowledge min", value=k_min,
                                    min=0.0, max=1.0, step=0.01, on_value=set_k_min)
-                solara.SliderFloat("Competitor increment", value=comp_inc,
-                                   min=0.0, max=0.2, step=0.005, on_value=set_comp_inc)
 
                 with solara.Row(style="gap:6px; margin-top:8px;"):
                     solara.Button("Initialise", on_click=initialise,

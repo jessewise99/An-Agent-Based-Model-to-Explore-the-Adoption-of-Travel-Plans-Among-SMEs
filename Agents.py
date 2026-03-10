@@ -312,10 +312,9 @@ class FirmAgent(Agent):
         # 2. Check time lag rules (i.e., block transitions until they have had time to transition)
         allowed_stage = candidate_stage 
 
-        # DevelopersLag: Must spend at least 2 ticks in development before moving to adoption
-        # If you are in C, you must spend at least 3 ticks there before moving to D or E
+        # DevelopersLag: Must spend at least 2 years in development before moving to adoption
         if old_stage == "C. Is developing a WTP" and candidate_stage in {"D. Has a WTP"}:
-            if self.time_in_stage < 2:
+            if self.time_in_stage < 24:
                 allowed_stage = old_stage
 
         # 3. Commit the stage

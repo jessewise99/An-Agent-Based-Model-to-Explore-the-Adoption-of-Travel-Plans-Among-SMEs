@@ -38,7 +38,7 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
         datacollector (DataCollector): Collects data for analysis.
     """
 
-    def __init__(self, num_agents, learning_rate, realism_pull_sociallyInfluencedVars, realism_pull_constraints, 
+    def __init__(self, num_agents, learning_rate, realism_pull_constraints, 
                  obj_net_benefit_min, obj_net_benefit_max, organisationalReadiness_min, publicTransport_min, knowledge_min, 
                  resource_min, competitor_inference_increment, active_shocks=None, shock_parameters=None, seed=None, debug=True): #_init_ means the model is being intialised
         super().__init__(seed=seed)  # This *initialises* the parent Model class and sets the random seed
@@ -54,7 +54,7 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
         # Set learning parameters
         self.competitor_inference_increment = competitor_inference_increment
         self.learning_rate = learning_rate
-        self.realism_pull_sociallyInfluencedVars = realism_pull_sociallyInfluencedVars
+        self.realism_pull_sociallyInfluencedVars =    0.01 * realism_pull_constraints,						# For benefits, costs, and knowledge, the realism pull is lower as these are more subjective likely to be swayed by social influence
         self.realism_pull_constraints = realism_pull_constraints
         
         # Set thresholds and bounds
