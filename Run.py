@@ -34,11 +34,11 @@ model = AdoptionModel(
     num_agents= 500, # Set how many agents there are in the model. This needs to be <= the number of firms in the data file.
     learning_rate = 0.9,									# This is the rate at which firms learn from other firms
     competitor_inference_increment=0.05, # This is how much an agent's perceived benefits increases or decreases depening on their compeitors adoption stage. (at the moment = to learning rate* learning)
-    realism_pull_constraints = 0,								# For time and money constraints set the realism pull as higher for these very objective concepts
-    organisationalReadiness_min = 0.441,										# This is the organisational readiness threshold, if exceeded they will consider adoption
-    publicTransport_min = 0.524,										# This is the public transport threshold, if exceeded they will consider adoption
-    resource_min = 0.474,										# This is resource threshold, if exceeded they will consider adoption
-    knowledge_min = 0.362,									# This is the knowledge threshold, if exceeded they will consider adoption
+    realism_pull_constraints = 0.02,								# For time and money constraints set the realism pull as higher for these very objective concepts
+    organisationalReadiness_min = 0.4367,										# This is the organisational readiness threshold, if exceeded they may be able to adopt
+    publicTransport_min = 0.5883,										# This is the public transport threshold, if exceeded they may be able to adopt
+    resource_min = 0.5683,										# This is resource threshold, if exceeded they may be able to adopt
+    knowledge_min = 0.4667,									# This is the knowledge threshold, if exceeded they may be able to adopt
     obj_net_benefit_min =	246,					# This is the lower threshold for the net benefits (£) an SME can expect per employee per year, according to the RAS project
     obj_net_benefit_max =	413,					# This is the upper threshold for the net benefits (£) an SME can expect per employee per year, according to the RAS project
     active_shocks = None, #{"caseStudy", "subsidy"} # These are the policies in effect. Needs to be a set.
