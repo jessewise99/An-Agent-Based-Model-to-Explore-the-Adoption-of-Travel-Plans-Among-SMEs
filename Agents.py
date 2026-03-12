@@ -249,12 +249,12 @@ class FirmAgent(Agent):
 
             # Awareness is a special case as it is binary (0 OR 1)
             if b == "awareness":
-                if any(v == 1 for v in peer_values):
+                if any(v == 1 for v in peer_values): # If any peer of theirs is aware, then they are also aware
                     self.beliefs["awareness"] = 1
                 continue  # Skip the continuous update for awareness
 
             # Continuous beliefs (0 -> 1)
-            social_mean = sum(peer_values) / len(peer_values) # takes an average of peer values
+            social_mean = sum(peer_values) / len(peer_values) # take an average of peer values
             personal = self.beliefs[b] # agent's current belief
             baseline = self.beliefs_initial[b] # agent's initial belief
 

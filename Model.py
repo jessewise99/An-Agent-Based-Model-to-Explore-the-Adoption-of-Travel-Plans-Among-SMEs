@@ -54,7 +54,7 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
         # Set learning parameters
         self.competitor_inference_increment = competitor_inference_increment
         self.learning_rate = learning_rate
-        self.realism_pull_sociallyInfluencedVars =    0.01 * realism_pull_constraints,						# For benefits, costs, and knowledge, the realism pull is lower as these are more subjective likely to be swayed by social influence
+        self.realism_pull_sociallyInfluencedVars =    0.1 * realism_pull_constraints						# For benefits, costs, and knowledge, the realism pull is lower as these are more subjective likely to be swayed by social influence
         self.realism_pull_constraints = realism_pull_constraints
         
         # Set thresholds and bounds
