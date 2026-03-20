@@ -314,7 +314,7 @@ class FirmAgent(Agent):
 
         # DevelopersLag: Must spend at least 2 years in development before moving to adoption
         if old_stage == "C. Is developing a WTP" and candidate_stage in {"D. Has a WTP"}:
-            if self.time_in_stage < 24:
+            if self.time_in_stage < 2:
                 allowed_stage = old_stage
 
         # 3. Commit the stage

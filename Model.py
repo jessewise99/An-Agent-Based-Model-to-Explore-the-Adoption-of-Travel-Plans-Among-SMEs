@@ -54,7 +54,7 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
         # Set learning parameters
         self.competitor_inference_increment = competitor_inference_increment
         self.learning_rate = learning_rate
-        self.realism_pull_sociallyInfluencedVars =    0.1 * realism_pull_constraints						# For benefits, costs, and knowledge, the realism pull is lower as these are more subjective likely to be swayed by social influence
+        self.realism_pull_sociallyInfluencedVars =    0.01 * realism_pull_constraints						# For benefits, costs, and knowledge, the realism pull is lower as these are more subjective likely to be swayed by social influence
         self.realism_pull_constraints = realism_pull_constraints
         
         # Set thresholds and bounds
@@ -99,13 +99,16 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
         # Data collection
         self.datacollector = DataCollector(
             model_reporters={
+                "Num_Considering": lambda m: m.count_adoption_stage("B. May consider"),
                 "Num_Developers": lambda m: m.count_adoption_stage("C. Is developing a WTP"),
                 "Num_Adopters": lambda m: (m.count_adoption_stage("D. Has a WTP")),
+                "Prop_Aware": lambda m: sum(a.beliefs["awareness"] for a in m.agents) / m.num_agents,
             },
             agent_reporters={
                 "Adoption Stage": "adoption_stage",
                 "Adoption Probability": "prob_adoption",
                 "Perceived Net Benefit": "perceived_net_benefit",
+                "Awareness": lambda a: a.beliefs["awareness"],
             },
         )
 
