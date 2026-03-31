@@ -150,7 +150,13 @@ class FirmAgent(Agent):
 
         self.perceived_net_benefit = None # This is also to help me debug
 
-
+    def initialise_step(self): # This is to derive the variables, just based on firms internal states rather than social learning
+        self.prev_adoption_stage = self.adoption_stage # Store this adoption stage to be used in observe_network
+        self.r_min_eff = self.model.effective_resource_min(self) # calculate their resource min based on whether subsidies are active or not
+        self.or_min_eff = self.model.effective_organisationalReadiness_min(self) # calculate their OR based on whether policy champions are active or not
+        self.update_perceived_feasibility()     # Firms update their perceived feasibility of adopting a WTP.
+        self.update_prob_adoption()             # Firms update their probability of adoption.
+        self.update_adoption_status()           # Their adoption status is updated.
 
     def step(self):
         self.prev_adoption_stage = self.adoption_stage # Store this adoption stage to be used in observe_network

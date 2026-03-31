@@ -112,6 +112,9 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
             },
         )
 
+        for agent in self.agents:
+            agent.initialise_step() # This is determinstic pass
+
         self.datacollector.collect(self)
 
     def step(self):

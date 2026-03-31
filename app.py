@@ -350,16 +350,16 @@ def AgentInspector(step: int):
 # ─────────────────────────────────────────────
 @solara.component
 def Page():
-    n_agents,      set_n_agents      = solara.use_state(100)
-    learning_rate, set_learning_rate = solara.use_state(0.9)
+    n_agents,      set_n_agents      = solara.use_state(500)
+    learning_rate, set_learning_rate = solara.use_state(0.5)
     r_con,         set_r_con         = solara.use_state(0.02)
     or_min,        set_or_min        = solara.use_state(0.4367)
     pt_min,        set_pt_min        = solara.use_state(0.5883)
     r_min,         set_r_min         = solara.use_state(0.5683)
     k_min,         set_k_min         = solara.use_state(0.4667)
-    obj_min,       set_obj_min       = solara.use_state(246.0)
-    obj_max,       set_obj_max       = solara.use_state(413.0)
-    comp_inc,      set_comp_inc      = solara.use_state(0.05)
+    obj_min,       set_obj_min       = solara.use_state(188.0)
+    obj_max,       set_obj_max       = solara.use_state(250.0)
+    comp_inc,      set_comp_inc      = solara.use_state(0.10)
     init_done,     set_init_done     = solara.use_state(False)
 
     def initialise():
@@ -408,6 +408,19 @@ def Page():
     model = model_ref.value
     step  = step_count.value   # read once; passed as prop to force child re-renders
 
+    def slider_row(label, value, set_value, min_val, max_val, step):
+        with solara.Row(style="align-items:center; gap:8px;"):
+            solara.Text(label, style="width:180px; font-size:12px;")
+            solara.SliderFloat(
+                label=None,
+                value=value,
+                min=min_val,
+                max=max_val,
+                step=step,
+                on_value=set_value,
+                style="flex:1;"
+            )
+
     with solara.Column(style="min-height:100vh; background:#0f111a; color:#d4d4d8;"
                              "font-family:'IBM Plex Mono',monospace;"):
 
@@ -432,20 +445,13 @@ def Page():
                     "letter-spacing:0.1em;margin-bottom:4px'>PARAMETERS</div>")
 
                 solara.InputInt("Agents", value=n_agents, on_value=set_n_agents)
-                solara.SliderFloat("Social learning rate (%)", value=learning_rate,
-                                   min=0.0, max=1.0, step=0.05, on_value=set_learning_rate)
-                solara.SliderFloat("Learning from observation (Set amount)", value=comp_inc,
-                                   min=0.0, max=0.2, step=0.005, on_value=set_comp_inc)
-                solara.SliderFloat("Realism pull", value=r_con,
-                                   min=0.0, max=0.1, step=0.001, on_value=set_r_con)
-                solara.SliderFloat("Organisational readiness min", value=or_min,
-                                   min=0.0, max=1.0, step=0.01, on_value=set_or_min)
-                solara.SliderFloat("Public transport access min", value=pt_min,
-                                   min=0.0, max=1.0, step=0.01, on_value=set_pt_min)
-                solara.SliderFloat("Resource min", value=r_min,
-                                   min=0.0, max=1.0, step=0.01, on_value=set_r_min)
-                solara.SliderFloat("Knowledge min", value=k_min,
-                                   min=0.0, max=1.0, step=0.01, on_value=set_k_min)
+                slider_row("Social learning rate (%)", learning_rate, set_learning_rate, 0.0, 1.0, 0.01)
+                slider_row("Learning from observation", comp_inc, set_comp_inc, 0.0, 0.2, 0.01)
+                slider_row("Realism pull", r_con, set_r_con, 0.0, 0.1, 0.01)
+                slider_row("Organisational readiness min", or_min, set_or_min, 0.0, 1.0, 0.01)
+                slider_row("Public transport access min", pt_min, set_pt_min, 0.0, 1.0, 0.01)
+                slider_row("Resource min", r_min, set_r_min, 0.0, 1.0, 0.01)
+                slider_row("Knowledge min", k_min, set_k_min, 0.0, 1.0, 0.01)
 
                 with solara.Row(style="gap:6px; margin-top:8px;"):
                     solara.Button("Initialise", on_click=initialise,

@@ -34,7 +34,7 @@ model = AdoptionModel(
     num_agents= 500, # Set how many agents there are in the model. This needs to be <= the number of firms in the data file.
     learning_rate = 0.75,									# This is the rate at which firms learn from other firms
     competitor_inference_increment=0.10, # This is how much an agent's perceived benefits increases or decreases depening on their compeitors adoption stage. (at the moment = to learning rate* learning)
-    realism_pull_constraints = 0,								# Higher number means that beliefs as less influenced.
+    realism_pull_constraints = 0.5,								# Higher number means that beliefs as less influenced.
     organisationalReadiness_min = 0.1,										# This is the organisational readiness threshold, if exceeded they may be able to adopt
     publicTransport_min = 0.1,										# This is the public transport threshold, if exceeded they may be able to adopt
     resource_min = 0.1,										# This is resource threshold, if exceeded they may be able to adopt
@@ -45,7 +45,7 @@ model = AdoptionModel(
     shock_parameters = None#{"accreditationAward": 0.25} # These are the strengths of the policies, it needs to be a dictionary. It will look like this {"caseStudy": 0.3, "subsidy": 0.2}
     )  # Create an instance of the AdoptionModel with the above parameters.
 
-T =  28 										# The program runs for 336 ticks, i.e. 28 years at 12 months a year because I have data from 1997 to 2025.
+T =  28 										# The program runs for 28 years at 12 months a year because I have data from 1997 to 2025.
 
 ######################################################################### Visualisations #########################################################################
 
