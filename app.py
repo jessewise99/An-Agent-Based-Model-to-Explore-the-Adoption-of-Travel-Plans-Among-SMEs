@@ -344,15 +344,16 @@ def AgentInspector(step: int):
 def slider_row(label, value, set_value, min_val, max_val, step_size):
     with solara.Row(style="align-items:center; gap:10px; width:100%;"):
         solara.Text(label, style="width:190px; font-size:12px; flex-shrink:0;")
-        solara.SliderFloat(
-            label=None,
-            value=value,
-            min=min_val,
-            max=max_val,
-            step=step_size,
-            on_value=set_value,
-            style="flex:1;"
-        )
+
+        with solara.Column(style="flex:1;"):
+            solara.SliderFloat(
+                label=None,
+                value=value,
+                min=min_val,
+                max=max_val,
+                step=step_size,
+                on_value=set_value
+            )
 
 @solara.component
 def Page():
