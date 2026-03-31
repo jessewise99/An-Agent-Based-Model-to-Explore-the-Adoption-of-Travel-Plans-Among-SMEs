@@ -4,8 +4,11 @@ WORKDIR /app
 
 ENV PYTHONUNBUFFERED=1
 
-COPY . .
-
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-CMD solara run app.py --host 0.0.0.0 --port 7860
+COPY . .
+
+EXPOSE 7860
+
+CMD ["solara", "run", "app.py", "--host=0.0.0.0", "--port=7860"]
