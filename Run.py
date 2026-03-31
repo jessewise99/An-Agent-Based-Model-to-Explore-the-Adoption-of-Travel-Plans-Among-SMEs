@@ -32,15 +32,15 @@ import matplotlib.animation as animation
 
 model = AdoptionModel(
     num_agents= 500, # Set how many agents there are in the model. This needs to be <= the number of firms in the data file.
-    learning_rate = 0.9,									# This is the rate at which firms learn from other firms
-    competitor_inference_increment=0.05, # This is how much an agent's perceived benefits increases or decreases depening on their compeitors adoption stage. (at the moment = to learning rate* learning)
-    realism_pull_constraints = 0.02,								# For time and money constraints set the realism pull as higher for these very objective concepts
-    organisationalReadiness_min = 0.4367,										# This is the organisational readiness threshold, if exceeded they may be able to adopt
-    publicTransport_min = 0.5883,										# This is the public transport threshold, if exceeded they may be able to adopt
-    resource_min = 0.5683,										# This is resource threshold, if exceeded they may be able to adopt
-    knowledge_min = 0.4667,									# This is the knowledge threshold, if exceeded they may be able to adopt
-    obj_net_benefit_min =	246,					# This is the lower threshold for the net benefits (£) an SME can expect per employee per year, according to the RAS project
-    obj_net_benefit_max =	413,					# This is the upper threshold for the net benefits (£) an SME can expect per employee per year, according to the RAS project
+    learning_rate = 0.75,									# This is the rate at which firms learn from other firms
+    competitor_inference_increment=0.10, # This is how much an agent's perceived benefits increases or decreases depening on their compeitors adoption stage. (at the moment = to learning rate* learning)
+    realism_pull_constraints = 0,								# Higher number means that beliefs as less influenced.
+    organisationalReadiness_min = 0.1,										# This is the organisational readiness threshold, if exceeded they may be able to adopt
+    publicTransport_min = 0.1,										# This is the public transport threshold, if exceeded they may be able to adopt
+    resource_min = 0.1,										# This is resource threshold, if exceeded they may be able to adopt
+    knowledge_min = 0.1,									# This is the knowledge threshold, if exceeded they may be able to adopt
+    obj_net_benefit_min =	188,					# This is the lower threshold for the net benefits (£) an SME can expect per employee per year, according to the RAS project
+    obj_net_benefit_max =	250,					# This is the upper threshold for the net benefits (£) an SME can expect per employee per year, according to the RAS project
     active_shocks = None, #{"caseStudy", "subsidy"} # These are the policies in effect. Needs to be a set.
     shock_parameters = None#{"accreditationAward": 0.25} # These are the strengths of the policies, it needs to be a dictionary. It will look like this {"caseStudy": 0.3, "subsidy": 0.2}
     )  # Create an instance of the AdoptionModel with the above parameters.
@@ -84,119 +84,119 @@ T =  28 										# The program runs for 336 ticks, i.e. 28 years at 12 months a
 # ani = animation.FuncAnimation(fig, draw_frame, frames=T, repeat=False, interval=500)
 # plt.show()
 
-# # --- Gather data ---
-# for _ in range(T):
-#     model.step()
+# --- Gather data ---
+for _ in range(T):
+    model.step()
 
-# agent_data = model.datacollector.get_agent_vars_dataframe().reset_index() #Retrieve agent-level data
-# beginning_data = agent_data[agent_data["Step"] == 1]
-# last_step = agent_data["Step"].max()
-# final_data = agent_data[agent_data["Step"] == last_step]
+agent_data = model.datacollector.get_agent_vars_dataframe().reset_index() #Retrieve agent-level data
+beginning_data = agent_data[agent_data["Step"] == 1]
+last_step = agent_data["Step"].max()
+final_data = agent_data[agent_data["Step"] == last_step]
 
-# model_data = model.datacollector.get_model_vars_dataframe().reset_index() #Retrieve model-level data
-# print(model_data[["Num_Developers", "Num_Adopters"]].head(15))
-# print(model_data["Num_Adopters"].describe())
-# print("Any adopters at all:", (model_data["Num_Adopters"] > 0).any())
-# agent_data = model.datacollector.get_agent_vars_dataframe()
-# print(agent_data["Adoption Probability"].describe())
-# print((agent_data["Adoption Probability"] >= 0.79).mean())
-# print((agent_data["Adoption Probability"] >= 0.85).mean())
+model_data = model.datacollector.get_model_vars_dataframe().reset_index() #Retrieve model-level data
+print(model_data[["Num_Developers", "Num_Adopters"]].head(15))
+print(model_data["Num_Adopters"].describe())
+print("Any adopters at all:", (model_data["Num_Adopters"] > 0).any())
+agent_data = model.datacollector.get_agent_vars_dataframe()
+print(agent_data["Adoption Probability"].describe())
+print((agent_data["Adoption Probability"] >= 0.79).mean())
+print((agent_data["Adoption Probability"] >= 0.85).mean())
 
-# # --- Visualsing the model Adopters in the network ---
-# # Plot histogram of adoption probabilities at beginning
-# plt.figure(figsize=(16, 10))
-# sns.histplot(beginning_data["Adoption Probability"], bins=20)
-# plt.title("Distribution of Intention to Adopt a Workplace Travel Plan at Beginning of Simulation")
-# plt.xlabel("Probability of adopting a workplace travel plan")
-# plt.ylabel("Number of agents")
-# plt.show()
+# --- Visualsing the model Adopters in the network ---
+# Plot histogram of adoption probabilities at beginning
+plt.figure(figsize=(16, 10))
+sns.histplot(beginning_data["Adoption Probability"], bins=20)
+plt.title("Distribution of Intention to Adopt a Workplace Travel Plan at Beginning of Simulation")
+plt.xlabel("Probability of adopting a workplace travel plan")
+plt.ylabel("Number of agents")
+plt.show()
 
-# # Plot histogram of adoption probabilities at end
-# plt.figure(figsize=(16, 10))
-# sns.histplot(final_data["Adoption Probability"], bins=20)
-# plt.title("Distribution of Intention to Adopt a Workplace Travel Plan at Final Tick")
-# plt.xlabel("Probability of adopting a workplace travel plan")
-# plt.ylabel("Number of agents")
-# plt.show()
+# Plot histogram of adoption probabilities at end
+plt.figure(figsize=(16, 10))
+sns.histplot(final_data["Adoption Probability"], bins=20)
+plt.title("Distribution of Intention to Adopt a Workplace Travel Plan at Final Tick")
+plt.xlabel("Probability of adopting a workplace travel plan")
+plt.ylabel("Number of agents")
+plt.show()
 
-# # Plot histogram of perceived NBs at beginning
-# plt.figure(figsize=(16, 10))
-# sns.histplot(beginning_data["Perceived Net Benefit"], bins=20)
-# plt.title("Distribution of Perceived Net Benefit of Adoption at Beginning of Simulation")
-# plt.xlabel("Perceived Net Benefit of adopting a workplace travel plan")
-# plt.ylabel("Number of agents")
-# plt.show()
+# Plot histogram of perceived NBs at beginning
+plt.figure(figsize=(16, 10))
+sns.histplot(beginning_data["Perceived Net Benefit"], bins=20)
+plt.title("Distribution of Perceived Net Benefit of Adoption at Beginning of Simulation")
+plt.xlabel("Perceived Net Benefit of adopting a workplace travel plan")
+plt.ylabel("Number of agents")
+plt.show()
 
-# # Plot histogram of perceived NBs at end
-# plt.figure(figsize=(16, 10))
-# sns.histplot(final_data["Perceived Net Benefit"], bins=20)
-# plt.title("Distribution of  Perceived Net Benefit of Adoption at Final Tick")
-# plt.xlabel("Perceived Net Benefit of adopting a workplace travel plan")
-# plt.ylabel("Number of agents")
-# plt.show()
+# Plot histogram of perceived NBs at end
+plt.figure(figsize=(16, 10))
+sns.histplot(final_data["Perceived Net Benefit"], bins=20)
+plt.title("Distribution of  Perceived Net Benefit of Adoption at Final Tick")
+plt.xlabel("Perceived Net Benefit of adopting a workplace travel plan")
+plt.ylabel("Number of agents")
+plt.show()
 
-# # --- Number of adopters over time ---
-# # Plot Adoption over time
-# plt.figure(figsize=(16, 10))
-# sns.lineplot(x="index", y="Num_Developers", data=model_data, marker="o") 
-# plt.title("Adoption Curve: Number of Firms Developing a WTP Over Time")
-# plt.xlabel("Step")
-# plt.ylabel("Number of Firms Developing a WTP")
-# plt.show()
+# --- Number of adopters over time ---
+# Plot Adoption over time
+plt.figure(figsize=(16, 10))
+sns.lineplot(x="index", y="Num_Developers", data=model_data, marker="o") 
+plt.title("Adoption Curve: Number of Firms Developing a WTP Over Time")
+plt.xlabel("Step")
+plt.ylabel("Number of Firms Developing a WTP")
+plt.show()
 
-# plt.figure(figsize=(16, 10))
-# sns.lineplot(x="index", y="Num_Adopters", data=model_data, marker="o")
-# plt.title("Adoption/Infection Curve: Number of Firms with a WTP Over Time")
-# plt.xlabel("Step")
-# plt.ylabel("Number of Firms Who Have Adopted a WTP")
-# plt.show()
+plt.figure(figsize=(16, 10))
+sns.lineplot(x="index", y="Num_Adopters", data=model_data, marker="o")
+plt.title("Adoption/Infection Curve: Number of Firms with a WTP Over Time")
+plt.xlabel("Step")
+plt.ylabel("Number of Firms Who Have Adopted a WTP")
+plt.show()
 
-# # Compute average adoption probability per step
-# avg_prob = agent_data.groupby("Step")["Adoption Probability"].mean().reset_index()
+# Compute average adoption probability per step
+avg_prob = agent_data.groupby("Step")["Adoption Probability"].mean().reset_index()
 
-# # Plot it
-# plt.figure(figsize=(16, 10))
-# sns.lineplot(x="Step", y="Adoption Probability", data=avg_prob, marker="o")
-# plt.title("Average Probability of Adoption Over Time")
-# plt.xlabel("Step")
-# plt.ylabel("Average Probability")
-# plt.show()
+# Plot it
+plt.figure(figsize=(16, 10))
+sns.lineplot(x="Step", y="Adoption Probability", data=avg_prob, marker="o")
+plt.title("Average Probability of Adoption Over Time")
+plt.xlabel("Step")
+plt.ylabel("Average Probability")
+plt.show()
 
-# ######################################################################### Parameter Sweeps with Batch Runner #########################################################################
-# You need to run data collection and the batch runner too see here https://mesa.readthedocs.io/latest/overview.html
+# # ######################################################################### Parameter Sweeps with Batch Runner #########################################################################
+# # You need to run data collection and the batch runner too see here https://mesa.readthedocs.io/latest/overview.html
 
-#--- Setting the parameters for the batch runner ---
-params = {"learning_rate":  [0.0, 0.25, 0.5, 0.75, 1],								# This is the rate at which firms learn from other firms
-          "competitor_inference_increment":  [0.0, 0.25, 0.5, 0.75, 1], # This is how much an agent's perceived benefits increases or decreases depening on their compeitors adoption stage. (at the moment = to learning rate* learning)
-          "realism_pull_constraints" :  [0.0, 0.25, 0.5, 0.75, 1],								# For time and money constraints set the realism pull as higher for these very objective concepts
-          ## These are not changing, but I have to pass them in anyway
-          "num_agents": 500, # Set how many agents there are in the model. This needs to be <= the number of firms in the data file.
-          "organisationalReadiness_min": 0.4367,										# This is the organisational readiness threshold, if exceeded they may be able to adopt
-          "publicTransport_min": 0.5883,										# This is the public transport threshold, if exceeded they may be able to adopt
-          "resource_min" :.5683,										# This is resource threshold, if exceeded they may be able to adopt
-          "knowledge_min": 0.4667,									# This is the knowledge threshold, if exceeded they may be able to adopt
-          "obj_net_benefit_min":	246,					# This is the lower threshold for the net benefits (£) an SME can expect per employee per year, according to the RAS project
-          "obj_net_benefit_max" :	413,					# This is the upper threshold for the net benefits (£) an SME can expect per employee per year, according to the RAS project
-          "active_shocks" : None, #{"caseStudy", "subsidy"} # These are the policies in effect. Needs to be a set.
-          "shock_parameters" : None#{"accreditationAward": 0.25} # These are the strengths of the policies, it needs to be a dictionary. It will look like this {"caseStudy": 0.3, "subsidy": 0.2}
-          } 
+# #--- Setting the parameters for the batch runner ---
+# params = {"learning_rate":  [0.0, 0.25, 0.5, 0.75, 1],								# This is the rate at which firms learn from other firms
+#           "competitor_inference_increment":  [0.0, 0.25, 0.5, 0.75, 1], # This is how much an agent's perceived benefits increases or decreases depening on their compeitors adoption stage. (at the moment = to learning rate* learning)
+#           "realism_pull_constraints" :  [0.0, 0.25, 0.5, 0.75, 1],								# For time and money constraints set the realism pull as higher for these very objective concepts
+#           ## These are not changing, but I have to pass them in anyway
+#           "num_agents": 500, # Set how many agents there are in the model. This needs to be <= the number of firms in the data file.
+#           "organisationalReadiness_min": 0.4367,										# This is the organisational readiness threshold, if exceeded they may be able to adopt
+#           "publicTransport_min": 0.5883,										# This is the public transport threshold, if exceeded they may be able to adopt
+#           "resource_min" :.5683,										# This is resource threshold, if exceeded they may be able to adopt
+#           "knowledge_min": 0.4667,									# This is the knowledge threshold, if exceeded they may be able to adopt
+#           "obj_net_benefit_min":	246,					# This is the lower threshold for the net benefits (£) an SME can expect per employee per year, according to the RAS project
+#           "obj_net_benefit_max" :	413,					# This is the upper threshold for the net benefits (£) an SME can expect per employee per year, according to the RAS project
+#           "active_shocks" : None, #{"caseStudy", "subsidy"} # These are the policies in effect. Needs to be a set.
+#           "shock_parameters" : None#{"accreditationAward": 0.25} # These are the strengths of the policies, it needs to be a dictionary. It will look like this {"caseStudy": 0.3, "subsidy": 0.2}
+#           } 
 
 
-#--- Running the batch runner ---
-results = mesa.batch_run(
-     AdoptionModel,
-     parameters=params,
-     iterations=5, # The number of iterations to run each parameter combination for. Optional. If not specified, defaults to 1. 10 is the minimum really.
-     max_steps=T, # How many steps to run the model for (needs 28 years @12 ticks per year = 336)
-     number_processes=1,
-     data_collection_period=1, # The length of the period (number of steps) after which the model and agent reporters collect data. Optional. If not specified, defaults to -1, i.e. only at the end of each episode.
-     display_progress=True,
- )
+# #--- Running the batch runner ---
+# results = mesa.batch_run(
+#      AdoptionModel,
+#      parameters=params,
+#      iterations=5, # The number of iterations to run each parameter combination for. Optional. If not specified, defaults to 1. 10 is the minimum really.
+#      max_steps=T, # How many steps to run the model for (needs 28 years @12 ticks per year = 336)
+#      number_processes=1,
+#      data_collection_period=1, # The length of the period (number of steps) after which the model and agent reporters collect data. Optional. If not specified, defaults to -1, i.e. only at the end of each episode.
+#      display_progress=True,
+#  )
 
-#--- Analysis and visualisation of batch results ---
-results_df = pd.DataFrame(results)
-print(f"The results have {len(results)} rows.")
-print(f"The columns of the data frame are {list(results_df.keys())}.")
+# #--- Analysis and visualisation of batch results ---
+# results_df = pd.DataFrame(results)
+# print(f"The results have {len(results)} rows.")
+# print(f"The columns of the data frame are {list(results_df.keys())}.")
 
-pyreadr.write_rds("batch_results.rds", results_df) # Write it to an .rds file so I can analyse it in R.
-print("Finished saving .rds file")
+# pyreadr.write_rds("batch_results.rds", results_df) # Write it to an .rds file so I can analyse it in R.
+# print("Finished saving .rds file")

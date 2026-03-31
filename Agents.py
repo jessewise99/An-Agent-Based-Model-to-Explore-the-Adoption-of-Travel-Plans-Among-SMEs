@@ -48,32 +48,15 @@ class FirmAgent(Agent):
         "Education",
         "Human health and social work",
         "Arts, entertainment and recreation"]
-        sector_weights=[0.0172, 0.0043, 0.0776, 0.0043, 0.0043, 0.056, 0.0862, 0.0431, 0.0388, 0.0647, 0.0603, 0.0086, 0.1034, 0.0345, 0.0043, 0.1422, 0.1336, 0.1166] # This used to sum to .9998 so i have had to change the numbers slightly
+        sector_weights=[0.0172, 0.0043, 0.0776, 0.0043, 0.0043, 0.056, 0.0862, 0.0431, 0.0388, 0.0647, 0.0603, 0.0086, 0.1034, 0.0345, 0.0043, 0.1422, 0.1336, 0.1166] # Because of rounding errors I have had to change the numbers slightly to sum to 1
 
 
         postcode_cats =["East Midlands", "East of England", "London", "North West", "Northern Ireland", "Scotland", "South East", "South West", 
                         "Wales", "West Midlands", "Yorkshire and The Humber"]
-        postcode_weights=[0.056, 0.0905, 0.1853, 0.1078, 0.0259, 0.0603, 0.1853, 0.0819, 0.0431, 0.0862, 0.0777] # same here
+        postcode_weights=[0.056, 0.0905, 0.1853, 0.1078, 0.0259, 0.0603, 0.1853, 0.0819, 0.0431, 0.0862, 0.0777] # Same here
 
-
-        # network_cats=[None, "Chamber of Commerce", "FSB","BACP", "CII", "CHSA", "UK Finance", "ABC", "ARLA", "ATOL", "Age Care UK", "Aging Better UK",
-        #               "Alzheimers Society", "American Bankers Association", "Aspire", "Association of Cycle Retailers", "Association of Professional Builders",
-        #               "BAFTA", "BEN", "Bank of England Regulatory and Industry Forums", "Boots", "British Standards Institution", "Business Network International",
-        #               "Chartered Banker Institute", "Clinical Board Meeting","Constructionline", "Deeside Decarbonisation Forum", "Entrepreneurs Circle", 
-        #               "Essex Care Association", "European Arenas Association", "Federation of Master Builders","Gambica","General Teaching Council for Scotland",
-        #               "HEP Hounslow Education Partnership", "IMAD", "IT Association", "Imperial Society of Teachers of Dancing", "Insurance Information Institute", 
-        #               "International Air Transport Association", "International Dance Teachers Association", "Local Council", "Local Health Network", "Multiple / Miscellaneous",
-        #               "National Association of Estate Agents",  "National Care Association", "National House Building Council", "Northern Ireland Hotels Federation",
-        #               "Nurture UK", "Ofqual", "Paradigm", "Passivhaus Institut", "Passivhaus Trust", "Payment Systems Regulator", "PiXL", "Public Relations and Communications Association",
-        #               "RNIC", "Recruitment & Employment Confederation", "Reigate Business Guild", "Risk Management Association","Road Haulage Association", 
-        #               "Royal College of Anaesthetists", "Russo-British Chamber of Commerce", "Society of Authors","Southern Farmers Network", 
-        #               "The Chartered Institute of Personnel and Development", "The Tile Association","Trade Unions & Collaboration of Schools", "UK Arts Network", 
-        #               "UK Contact Centre Forum", "UK Proptech", "UK Weighing Federation", "Visit Belfast", "Wales Area Entertainment Complexes", "Welsh Arts Council",
-        #               "West London Business Partnership"] # Commenting this out while i fix the problem of joint network memberships 
         network_cats=[None, "Chamber of Commerce", "FSB","BACP", "CII", "CHSA"] 
-        #network_weights=[0.7586, 0.1202, 0.0689,  0.0345,  0.0345,  0.0345, 0.0345, 0.01724]
-        network_weights=[0.7074, 0.1202, 0.0689,  0.0345,  0.0345,  0.0345]
-        # Approx 25% are in a network. Often more than one network at a time. network_cats lists the cleaned names. This will be something I need to change
+        network_weights=[0.7074, 0.1202, 0.0689,  0.0345,  0.0345,  0.0345] # Approx 25% are in a network. Often more than one network at a time. For now I start with a simple model where firms are only members of 1 network. Again, to make it sum to 1, I've had to change the proportions slightly.
 
         size_cats = ["10-19", "20-49","50-99", "100-249"]
         size_weights=[0.16, 0.28, 0.20, 0.36]
@@ -237,9 +220,9 @@ class FirmAgent(Agent):
                 self.beliefs["motivations"] += self.competitor_inference_increment_eff
                 self.beliefs["awareness"]=1
 
-        for prev_stage, curr_stage in self.competitor_adoptions:
-            if prev_stage in adopted and curr_stage in non_adopted:
-                self.beliefs["motivations"] -= self.competitor_inference_increment_eff
+        # for prev_stage, curr_stage in self.competitor_adoptions:
+        #     if prev_stage in adopted and curr_stage in non_adopted:
+        #         self.beliefs["motivations"] -= self.competitor_inference_increment_eff
 
     def update_knowledge_fully(self):
         for b in self.beliefs:  # Loop through all belief dimensions
@@ -288,7 +271,7 @@ class FirmAgent(Agent):
                 (self.beliefs["motivations"] - (self.beliefs["perceivedBarriers"])))) # estimated net benefit is equal to the minimum plausible net benefit plus a range of plausible net benefit values that depends on the perception of costs and benefits of adoption (which are scaled between 0 and 1). 
         
         if self.feasible:                                                            # If the WTP is perceived as feasible, then:
-            self.prob_adoption = 1 / (1 + math.exp(0.035*(self.perceived_net_benefit-329.5)))          # The logit (sigmoidal) function converts the perceived net benefit into a probability of adoption for a range of NB from 246 to 413. Which is what we want when size does not influence
+            self.prob_adoption = 1 / (1 + math.exp(0.1482*(self.perceived_net_benefit-219)))          # The logit (sigmoidal) function converts the perceived net benefit into a probability of adoption for a range of NB from 188 to 250. Which is what we want when size does not influence
         else:
             self.prob_adoption = 0                                                   # If a WTP is not perceived as feasible, then the probability of adoption is 0
 
