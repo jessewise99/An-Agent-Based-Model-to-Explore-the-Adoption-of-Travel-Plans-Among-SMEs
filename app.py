@@ -19,6 +19,7 @@ import plotly.graph_objects as go
 from collections import Counter
 from Model import AdoptionModel
 
+raise Exception("TEST ERROR")
 # ─────────────────────────────────────────────
 #  Colour palette
 # ─────────────────────────────────────────────
