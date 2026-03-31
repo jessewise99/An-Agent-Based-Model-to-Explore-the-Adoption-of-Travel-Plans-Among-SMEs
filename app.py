@@ -11,14 +11,6 @@
 # find it online at...
 # use pip freeze > requirements.txt to create the requirements text needed on hugging face
 
-import solara
-import solara.lab
-import networkx as nx
-import plotly.graph_objects as go
-import pandas as pd
-import numpy as np
-from Model import AdoptionModel
-
 
 import solara
 import solara.lab
@@ -348,6 +340,19 @@ def AgentInspector(step: int):
 # ─────────────────────────────────────────────
 #  Main page
 # ─────────────────────────────────────────────
+def slider_row(label, value, set_value, min_val, max_val, step_size):
+    with solara.Row(style="align-items:center; gap:10px; width:100%;"):
+        solara.Text(label, style="width:190px; font-size:12px; flex-shrink:0;")
+        solara.SliderFloat(
+            label=None,
+            value=value,
+            min=min_val,
+            max=max_val,
+            step=step_size,
+            on_value=set_value,
+            style="flex:1;"
+        )
+
 @solara.component
 def Page():
     n_agents,      set_n_agents      = solara.use_state(500)
@@ -408,19 +413,6 @@ def Page():
     model = model_ref.value
     step  = step_count.value   # read once; passed as prop to force child re-renders
 
-    def slider_row(label, value, set_value, min_val, max_val, step):
-        with solara.Row(style="align-items:center; gap:8px;"):
-            solara.Text(label, style="width:180px; font-size:12px;")
-            solara.SliderFloat(
-                label=None,
-                value=value,
-                min=min_val,
-                max=max_val,
-                step=step,
-                on_value=set_value,
-                style="flex:1;"
-            )
-
     with solara.Column(style="min-height:100vh; background:#0f111a; color:#d4d4d8;"
                              "font-family:'IBM Plex Mono',monospace;"):
 
@@ -453,7 +445,7 @@ def Page():
                 slider_row("Resource min", r_min, set_r_min, 0.0, 1.0, 0.01)
                 slider_row("Knowledge min", k_min, set_k_min, 0.0, 1.0, 0.01)
 
-                with solara.Row(style="gap:6px; margin-top:8px;"):
+                with solara.Row(style="align-items:center; gap:8px; width:100%;"):
                     solara.Button("Initialise", on_click=initialise,
                                   color="primary", style="flex:1;")
                     if init_done:
