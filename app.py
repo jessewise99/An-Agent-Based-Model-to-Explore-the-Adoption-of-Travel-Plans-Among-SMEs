@@ -431,7 +431,7 @@ def Page():
           <span style='font-size:18px;font-weight:700;color:#f4f4f5;
                        letter-spacing:0.04em'>WTP ADOPTION MODEL</span>
           <span style='font-size:11px;color:#4b5563;letter-spacing:0.08em'>
-            Agent Based Model of Workplace Travel Plans · Made useing MESA · Each step represents 1 month, running for up to 28 years (336 ticks)
+            Agent Based Model of Workplace Travel Plans · Made useing MESA · Each step represents 1 year, running for up to 28 years
           </span>
         </div>""")
 
