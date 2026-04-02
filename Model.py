@@ -1,6 +1,6 @@
 ############################################
-#     Toy model prototype - Model          #
-#     Date: 2026-02-04                     #
+#     Model - Model                        #
+#     Date: 2026-04-02                     #
 #     Author: Jesse Wise                   #
 #     Purpose: Implementing Pseudocode V2  #
 ############################################
@@ -37,10 +37,22 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
         running (bool): Whether the model should continue running.
         datacollector (DataCollector): Collects data for analysis.
     """
+    grid: NetworkGrid
+    G: nx.Graph
+    resource_min: float
+    organisationalReadiness_min: float
+    knowledge_min: float
+    publicTransport_min: float
+    competitor_inference_increment: float
+    learning_rate: float
+    obj_net_benefit_max: int
+    obj_net_benefit_min: int
 
-    def __init__(self, num_agents, learning_rate, realism_pull_constraints, 
-                 obj_net_benefit_min, obj_net_benefit_max, organisationalReadiness_min, publicTransport_min, knowledge_min, 
-                 resource_min, competitor_inference_increment, active_shocks=None, shock_parameters=None, seed=None, debug=True): #_init_ means the model is being intialised
+
+    def __init__(self, num_agents:int, learning_rate:float, competitor_inference_increment:float,
+                 realism_pull_constraints:float, organisationalReadiness_min:float,
+                 publicTransport_min:float, knowledge_min:float, resource_min:float,
+                 obj_net_benefit_min:int, obj_net_benefit_max:int, shock_parameters=None,seed=None, active_shocks=None, debug=True): #_init_ means the model is being intialised
         super().__init__(seed=seed)  # This *initialises* the parent Model class and sets the random seed
 
         self.num_agents = int(num_agents) # Makes sure its an integer
@@ -54,7 +66,7 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
         # Set learning parameters
         self.competitor_inference_increment = competitor_inference_increment
         self.learning_rate = learning_rate
-        self.realism_pull_sociallyInfluencedVars =    0.01 * realism_pull_constraints						# For benefits, costs, and knowledge, the realism pull is lower as these are more subjective likely to be swayed by social influence
+        self.realism_pull_sociallyInfluencedVars =    0.5 * realism_pull_constraints						# For benefits, costs, and knowledge, the realism pull is lower as these are more subjective likely to be swayed by social influence
         self.realism_pull_constraints = realism_pull_constraints
         
         # Set thresholds and bounds
@@ -126,8 +138,8 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
         """
         Build graph from agents using the rule:
         - edge exists if same postcode OR same non None network
-        - edge type is peer if (same postcode and different sector) OR same network
-          otherwise competitor
+        - edge type is strong (peer) if in the same network, or it is a weak (competitor) link if they are in the same region
+          otherwise no edge
         """
         G = nx.Graph() # Creates an empty undirected simple graph
 
@@ -138,7 +150,7 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
                 postcode=a.postcode,
                 sector=a.sector,
                 network=a.network,
-                size=a.size,
+                #size=a.size,
             )
 
         # Group by linkage keys. These are two dictionaries acting as grouping structures

@@ -1,6 +1,6 @@
 ############################################
-#     Toy model prototype - Agents         #
-#     Date: 2026-02-04                     #
+#     Model - Agents                       #
+#     Date: 2026-04-02                     #
 #     Author: Jesse Wise                   #
 #     Purpose: Implementing Pseudocode V2  #
 ############################################
@@ -24,8 +24,14 @@ class FirmAgent(Agent):
         beliefs (dict): Subjective and objective beliefs.
         belief_types (dict): Used to set learning realism pull per belief type.
     """
+    resource_min: float
+    organisationalReadiness_min: float
+    knowledge_min: float
+    publicTransport_min: float
+    competitor_inference_increment: float
+    learning_rate: float
 
-    def __init__(self, model, sector=None, postcode=None, network=None, size=None):
+    def __init__(self, model, sector=None, postcode=None, network=None):
         super().__init__(model)  # Pass parameters to the parent class. Mesa should automatically generate unique_id and register the agent
 
         # Static attributes
@@ -58,20 +64,20 @@ class FirmAgent(Agent):
         network_cats=[None, "Chamber of Commerce", "FSB","BACP", "CII", "CHSA"] 
         network_weights=[0.7074, 0.1202, 0.0689,  0.0345,  0.0345,  0.0345] # Approx 25% are in a network. Often more than one network at a time. For now I start with a simple model where firms are only members of 1 network. Again, to make it sum to 1, I've had to change the proportions slightly.
 
-        size_cats = ["10-19", "20-49","50-99", "100-249"]
-        size_weights=[0.16, 0.28, 0.20, 0.36]
-        self.SIZE_MIDPOINT = {"10-19": 14.5, "20-49": 34.5, "50-99": 74.5, "100-249": 174.5}
+        # size_cats = ["10-19", "20-49","50-99", "100-249"]
+        # size_weights=[0.16, 0.28, 0.20, 0.36]
+        # self.SIZE_MIDPOINT = {"10-19": 14.5, "20-49": 34.5, "50-99": 74.5, "100-249": 174.5}
 
-        def draw_size_from_bin(bin_label: str) -> int:
-            lo_str, hi_str = bin_label.split("-")
-            lo, hi = int(lo_str), int(hi_str)
-            # Inclusive on both ends
-            return self.model.random.randrange(lo, hi + 1)
+        # def draw_size_from_bin(bin_label: str) -> int:
+        #     lo_str, hi_str = bin_label.split("-")
+        #     lo, hi = int(lo_str), int(hi_str)
+        #     # Inclusive on both ends
+        #     return self.model.random.randrange(lo, hi + 1)
 
         # Static attributes (size, sector, postcode, network memebership draw from survey data distributions)
         self.time_in_stage = 0 # This is an agent level counter which will be used to add time lags to adoption
-        self.size_cat = self.model.random.choices(size_cats, weights=size_weights, k=1)[0] # Bin based sampling from your survey distribution
-        self.size = draw_size_from_bin(self.size_cat)
+        #self.size_cat = self.model.random.choices(size_cats, weights=size_weights, k=1)[0] # Bin based sampling from your survey distribution
+        #self.size = draw_size_from_bin(self.size_cat)
         self.sector = sector if sector is not None else self.model.random.choices(sector_cats, weights=sector_weights, k=1)[0]
         self.postcode = postcode if postcode is not None else self.model.random.choices(postcode_cats, weights=postcode_weights, k=1)[0]
         self.network = network if network is not None else self.model.random.choices(network_cats, weights=network_weights, k=1)[0]
@@ -94,6 +100,8 @@ class FirmAgent(Agent):
         proofOfROI_weights=[0.015, 0.053, 0.173, 0.444, 0.316]
         accreditationAward_weights=[0.143, 0.188,0.263,0.301,0.105]
         policyChampion_weights=[0.145, 0.298, 0.366, 0.153, 0.038]
+        wordOfMouth_weights=[0.145, 0.298, 0.366, 0.153, 0.038] # Need to come back and edit this
+
         
         # Draw category then store both category and numeric sensitivity
         def draw_sensitivity(weights):
@@ -102,7 +110,7 @@ class FirmAgent(Agent):
 
         self.shock_sensitivity = {
             "subsidy": draw_sensitivity(subsidy_weights),
-            "wordOfMouth": draw_sensitivity(caseStudy_weights),
+            "wordOfMouth": draw_sensitivity(wordOfMouth_weights),
             "caseStudy": draw_sensitivity(caseStudy_weights),
             "proofOfROI": draw_sensitivity(proofOfROI_weights),
             "accreditationAward": draw_sensitivity(accreditationAward_weights),
@@ -120,6 +128,7 @@ class FirmAgent(Agent):
             "awareness": self.model.random.choices([0, 1], weights=[0.64, 0.36])[0] # Coleman 2000
             }
 
+
         # Store the initial beliefs to pull toward realism baseline
         self.beliefs_initial = self.beliefs.copy()
 
@@ -134,7 +143,7 @@ class FirmAgent(Agent):
             "awareness": "subjective"
         }
 
-        # Dynamic attributes (not beliefs)
+        # Dynamic attributes (not beliefs). These are just place holders that get overwritten by agent.initialise_step() in model.py
         self.adoption_stage = "A. No intention"
         self.prev_adoption_stage = self.adoption_stage # This will store the adoption stage to be used in observe_network for competitors
         self.feasible = False
@@ -151,7 +160,6 @@ class FirmAgent(Agent):
         self.perceived_net_benefit = None # This is also to help me debug
 
     def initialise_step(self): # This is to derive the variables, just based on firms internal states rather than social learning
-        self.prev_adoption_stage = self.adoption_stage # Store this adoption stage to be used in observe_network
         self.r_min_eff = self.model.effective_resource_min(self) # calculate their resource min based on whether subsidies are active or not
         self.or_min_eff = self.model.effective_organisationalReadiness_min(self) # calculate their OR based on whether policy champions are active or not
         self.update_perceived_feasibility()     # Firms update their perceived feasibility of adopting a WTP.
@@ -223,7 +231,7 @@ class FirmAgent(Agent):
 
         for prev_stage, curr_stage in self.competitor_adoptions:
             if prev_stage in non_adopted and curr_stage in adopted:
-                self.beliefs["motivations"] += self.competitor_inference_increment_eff
+                self.beliefs["motivations"] = np.clip(self.beliefs["motivations"] + self.competitor_inference_increment_eff, 0.00, 1.0)
                 self.beliefs["awareness"]=1
 
         # for prev_stage, curr_stage in self.competitor_adoptions:
@@ -252,24 +260,24 @@ class FirmAgent(Agent):
                 else self.model.realism_pull_constraints
             ) # Use the correct realism pull based on belief type i.e., it is stronger for constraints (objective) than for subjective beliefs
 
-            self.beliefs[b] += ( # New belief = old belief + 
-                self.learning_rate_eff * (social_mean - personal) # (learning rate × peer signal gap) nudges beliefs towards the social average +
-                + realism_pull * (baseline - personal) # (realism pull × gap from original belief)  pulls beliefs back toward where they started
-                )
+            self.beliefs[b] = np.clip(( self.beliefs[b]# New belief = old belief + 
+               + self.learning_rate_eff * (social_mean - personal) # (learning rate × peer signal gap) nudges beliefs towards the social average +
+               + realism_pull * (baseline - personal) # (realism pull × gap from original belief)  pulls beliefs back toward where they started
+            ), 0.0, 1.0)
     
     def update_perceived_feasibility(self):
         self.feasible = (
-            self.beliefs["resources"] > self.r_min_eff and
-            self.beliefs["knowledge"] > self.k_min and
-            self.beliefs["organisationalReadiness"] > self.or_min_eff and
-            self.beliefs["publicTransport"] > self.pt_min and
+            self.beliefs["resources"] >= self.r_min_eff and
+            self.beliefs["knowledge"] >= self.k_min and
+            self.beliefs["organisationalReadiness"] >= self.or_min_eff and
+            self.beliefs["publicTransport"] >= self.pt_min and
             self.beliefs["awareness"] == 1
-        ) # Feasible = True if all constraints  are above the minimum thresholds, otherwise it is false
+        ) # Feasible = True if all constraints  are above or = to the minimum thresholds, otherwise it is false
 
     def update_prob_adoption(self):
-        size_mid = self.SIZE_MIDPOINT.get(self.size_cat) # Get the midpoint of the size bin
-        if size_mid is None: # For debuggin
-            raise ValueError(f"Unknown size category: {self.size}")
+        # size_mid = self.SIZE_MIDPOINT.get(self.size_cat) # Get the midpoint of the size bin
+        # if size_mid is None: # For debuggin
+        #     raise ValueError(f"Unknown size category: {self.size}")
         
         # Calculate the perceived net benefit of adopting a WTP
         self.perceived_net_benefit = self.model.obj_net_benefit_min + (
@@ -277,7 +285,7 @@ class FirmAgent(Agent):
                 (self.beliefs["motivations"] - (self.beliefs["perceivedBarriers"])))) # estimated net benefit is equal to the minimum plausible net benefit plus a range of plausible net benefit values that depends on the perception of costs and benefits of adoption (which are scaled between 0 and 1). 
         
         if self.feasible:                                                            # If the WTP is perceived as feasible, then:
-            self.prob_adoption = 1 / (1 + math.exp(0.1482*(self.perceived_net_benefit-219)))          # The logit (sigmoidal) function converts the perceived net benefit into a probability of adoption for a range of NB from 188 to 250. Which is what we want when size does not influence
+            self.prob_adoption = 1 / (1 + math.exp(0.08*(self.perceived_net_benefit-188)))          # The logit (sigmoidal) function converts the perceived net benefit into a probability of adoption for a range of NB from 126 to 250. Which is what we want when size does not influence
         else:
             self.prob_adoption = 0                                                   # If a WTP is not perceived as feasible, then the probability of adoption is 0
 
