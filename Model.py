@@ -159,7 +159,7 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
 
         for a in agents: # Filling the by_postcode and by_network lists...
             by_postcode.setdefault(a.postcode, []).append(a.unique_id) # If this postcode is not already a key, create it with an empty list, then add agent id to that postcode group
-            if a.network is not None and a.network != "None": # Then, only if the network value is not None and not the string "None"... 
+            if a.network is not None and a.network != None: # Then, only if the network value is not None and not the string "None"... 
                 by_network.setdefault(a.network, []).append(a.unique_id) # ... add the agent into by_network under that network label.
 
         def add_edges_within_group(id_list):
@@ -170,7 +170,7 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
                 spatial_link = (p1 == p2) # True if same postcode
                 network_link = (
                     n1 is not None and n2 is not None
-                    and n1 != "None" and n2 != "None"
+                    and n1 != "None" and n2 != "None" # This is just in case I've put it as a string
                     and n1 == n2) # True if they are both in the same network
                 
                 if network_link:

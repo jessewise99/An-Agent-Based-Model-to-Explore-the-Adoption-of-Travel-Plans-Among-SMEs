@@ -128,7 +128,6 @@ class FirmAgent(Agent):
             "awareness": self.model.random.choices([0, 1], weights=[0.64, 0.36])[0] # Coleman 2000
             }
 
-
         # Store the initial beliefs to pull toward realism baseline
         self.beliefs_initial = self.beliefs.copy()
 
@@ -150,6 +149,8 @@ class FirmAgent(Agent):
         self.prob_adoption = 0
 
         # Store static thresholds from the model
+        self.r_min_eff = self.model.effective_resource_min(self) # calculate their resource min based on whether subsidies are active or not
+        self.or_min_eff = self.model.effective_organisationalReadiness_min(self) # calculate their OR based on whether policy champions are active or not
         self.r_min = model.resource_min
         self.k_min = model.knowledge_min
         self.or_min = model.organisationalReadiness_min
@@ -160,8 +161,6 @@ class FirmAgent(Agent):
         self.perceived_net_benefit = None # This is also to help me debug
 
     def initialise_step(self): # This is to derive the variables, just based on firms internal states rather than social learning
-        self.r_min_eff = self.model.effective_resource_min(self) # calculate their resource min based on whether subsidies are active or not
-        self.or_min_eff = self.model.effective_organisationalReadiness_min(self) # calculate their OR based on whether policy champions are active or not
         self.update_perceived_feasibility()     # Firms update their perceived feasibility of adopting a WTP.
         self.update_prob_adoption()             # Firms update their probability of adoption.
         self.update_adoption_status()           # Their adoption status is updated.
@@ -169,10 +168,15 @@ class FirmAgent(Agent):
     def step(self):
         self.prev_adoption_stage = self.adoption_stage # Store this adoption stage to be used in observe_network
         self.time_in_stage += 1                 # Increase the time step
+
+
+        ### This is used for implementing exogenous shocks
         self.r_min_eff = self.model.effective_resource_min(self) # calculate their resource min based on whether subsidies are active or not
         self.or_min_eff = self.model.effective_organisationalReadiness_min(self) # calculate their OR based on whether policy champions are active or not
         self.learning_rate_eff = self.model.effective_learning_rate(self) # caluculate learning rate based on whether accridatiation is on or not
         self.competitor_inference_increment_eff = self.model.effective_competitor_inference_increment(self) # caluculate competitor inference increment based on whether accridatiation is on or not
+        
+        ###  Step
         self.observe_network()                  # Firms observe their network (strong and weak ties) to learn from them.
         self.update_knowledge_fully()            # Based on observations of strong ties (peers), firms have full information.
         self.update_knowledge_partially()         # Based on observations of weak ties (competitors), firms infer their knowledge based on partial information
@@ -180,6 +184,7 @@ class FirmAgent(Agent):
         self.update_perceived_feasibility()     # Firms update their perceived feasibility of adopting a WTP.
         self.update_prob_adoption()             # Firms update their probability of adoption.
         self.update_adoption_status()           # Their adoption status is updated.
+
 
 
     def observe_network(self):
@@ -223,7 +228,7 @@ class FirmAgent(Agent):
             if neighbour.adoption_stage in adopted_stages:
                 num_with_plan += 1
 
-        self.perceivedPeerAdoption = num_with_plan / total
+        self.perceivedPeerAdoption = num_with_plan / total # At the moment this is just a latent variable to observe.
 
     def update_knowledge_partially(self):
         non_adopted = {"A. No intention", "B. May consider"}
@@ -232,6 +237,7 @@ class FirmAgent(Agent):
         for prev_stage, curr_stage in self.competitor_adoptions:
             if prev_stage in non_adopted and curr_stage in adopted:
                 self.beliefs["motivations"] = np.clip(self.beliefs["motivations"] + self.competitor_inference_increment_eff, 0.00, 1.0)
+                self.beliefs["perceivedBarriers"] = np.clip(self.beliefs["perceivedBarriers"] - self.competitor_inference_increment_eff, 0.00, 1.0)
                 self.beliefs["awareness"]=1
 
         # for prev_stage, curr_stage in self.competitor_adoptions:
@@ -285,7 +291,7 @@ class FirmAgent(Agent):
                 (self.beliefs["motivations"] - (self.beliefs["perceivedBarriers"])))) # estimated net benefit is equal to the minimum plausible net benefit plus a range of plausible net benefit values that depends on the perception of costs and benefits of adoption (which are scaled between 0 and 1). 
         
         if self.feasible:                                                            # If the WTP is perceived as feasible, then:
-            self.prob_adoption = 1 / (1 + math.exp(0.08*(self.perceived_net_benefit-188)))          # The logit (sigmoidal) function converts the perceived net benefit into a probability of adoption for a range of NB from 126 to 250. Which is what we want when size does not influence
+            self.prob_adoption = 1 / (1 + math.exp(-0.08*(self.perceived_net_benefit-126)))          # The logit (sigmoidal) function converts the perceived net benefit into a probability of adoption for a range of NB from 126 to 250. Which is what we want when size does not influence
         else:
             self.prob_adoption = 0                                                   # If a WTP is not perceived as feasible, then the probability of adoption is 0
 

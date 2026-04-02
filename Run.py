@@ -45,7 +45,7 @@ model = AdoptionModel(
     shock_parameters = None#{"accreditationAward": 0.25} # These are the strengths of the policies, it needs to be a dictionary. It will look like this {"caseStudy": 0.3, "subsidy": 0.2}
     )  # Create an instance of the AdoptionModel with the above parameters.
 
-T =  28 										# The program runs for 28 years at 12 months a year because I have data from 1997 to 2025.
+T =  28 										# The program runs for 28 years because I have data from 1997 to 2025.
 
 ######################################################################### Visualisations #########################################################################
 
@@ -65,10 +65,10 @@ def draw_frame(frame):
     ax.clear()
 
     # One tick only
-    model.step()
+    model.step() # The animation advances the step
 
-    node_colors = [stage_colours[a.adoption_stage] for a in model.agents]
-    node_sizes = [max(50, a.prob_adoption * 800) for a in model.agents]
+    node_colors = [stage_colours[model.grid.get_cell_list_contents([n])[0].adoption_stage] for n in G.nodes()]
+    node_sizes  = [max(50, model.grid.get_cell_list_contents([n])[0].prob_adoption*800) for n in G.nodes()]
 
     nx.draw(
         G,
