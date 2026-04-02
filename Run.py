@@ -41,8 +41,8 @@ model = AdoptionModel(
     knowledge_min= 0.4667,									# This is the knowledge threshold, if exceeded they may be able to adopt
     obj_net_benefit_min =	188,					# This is the lower threshold for the net benefits (£) an SME can expect per employee per year, according to the RAS project
     obj_net_benefit_max =	250,					# This is the upper threshold for the net benefits (£) an SME can expect per employee per year, according to the RAS project
-    active_shocks = None, #{"caseStudy", "subsidy"} # These are the policies in effect. Needs to be a set.
-    shock_parameters = None#{"accreditationAward": 0.25} # These are the strengths of the policies, it needs to be a dictionary. It will look like this {"caseStudy": 0.3, "subsidy": 0.2}
+    active_shocks = None,# {"subsidy", "proofOfROI"}, # These are the policies in effect. Needs to be a set.
+    shock_parameters = None, #{"subsidy": 0.5, "proofOfROI":0.3} # These are the strengths of the policies, it needs to be a dictionary. It will look like this {"caseStudy": 0.3, "subsidy": 0.2}
     )  # Create an instance of the AdoptionModel with the above parameters.
 
 T =  28 										# The program runs for 28 years because I have data from 1997 to 2025.

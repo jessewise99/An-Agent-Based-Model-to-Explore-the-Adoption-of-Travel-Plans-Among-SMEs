@@ -129,10 +129,24 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
 
         self.datacollector.collect(self)
 
-    def step(self):
-        self.apply_active_shocks()
-        self.agents.shuffle_do("step")
-        self.datacollector.collect(self)
+    def step(self): # This defines what happens each tick
+        self.apply_active_shocks() # If you have any active shocks, this step applies them
+
+        # Phase 1: snapshot the start of the tick for every agent
+        agents = list(self.agents)
+        self.random.shuffle(agents) # This keeps a random order of agents at each tick, but everyone gets a snapshot
+        for agent in agents:
+            agent.store_previous_state()
+    
+        # Phase 2: compute next state from snapshots only
+        for agent in agents:
+            agent.step()
+
+        # Phase 3: commit next state for everyone
+        for agent in agents:
+            agent.advance()
+
+        self.datacollector.collect(self) # Collect data
 
     def build_network_from_agents(self, agents):
         """

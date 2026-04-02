@@ -144,9 +144,27 @@ class FirmAgent(Agent):
 
         # Dynamic attributes (not beliefs). These are just place holders that get overwritten by agent.initialise_step() in model.py
         self.adoption_stage = "A. No intention"
-        self.prev_adoption_stage = self.adoption_stage # This will store the adoption stage to be used in observe_network for competitors
+        self.prev_adoption_stage = self.adoption_stage
         self.feasible = False
         self.prob_adoption = 0
+        self.perceived_net_benefit = None
+        self.perceivedPeerAdoption = 0.0
+
+        # Snapshots from the previous tick
+        self.prev_beliefs = self.beliefs.copy()
+        self.prev_feasible = self.feasible
+        self.prev_prob_adoption = self.prob_adoption
+        self.prev_perceived_net_benefit = self.perceived_net_benefit
+        self.prev_time_in_stage = self.time_in_stage
+
+        # Buffers for the next tick
+        self.next_beliefs = self.beliefs.copy()
+        self.next_feasible = self.feasible
+        self.next_prob_adoption = self.prob_adoption
+        self.next_perceived_net_benefit = self.perceived_net_benefit
+        self.next_adoption_stage = self.adoption_stage
+        self.next_time_in_stage = self.time_in_stage
+        self.next_perceivedPeerAdoption = self.perceivedPeerAdoption
 
         # Store static thresholds from the model
         self.r_min_eff = self.model.effective_resource_min(self) # calculate their resource min based on whether subsidies are active or not
@@ -164,11 +182,11 @@ class FirmAgent(Agent):
         self.update_perceived_feasibility()     # Firms update their perceived feasibility of adopting a WTP.
         self.update_prob_adoption()             # Firms update their probability of adoption.
         self.update_adoption_status()           # Their adoption status is updated.
+        self.store_previous_state()             # So I save the OG values but have calculate adoption status based on values
 
     def step(self):
-        self.prev_adoption_stage = self.adoption_stage # Store this adoption stage to be used in observe_network
-        self.time_in_stage += 1                 # Increase the time step
-
+        self.next_beliefs = self.prev_beliefs.copy() # Start from the previous state as a baseline
+        self.next_time_in_stage = self.prev_time_in_stage + 1  # Time advances by one tick unless reset later by a stage change
 
         ### This is used for implementing exogenous shocks
         self.r_min_eff = self.model.effective_resource_min(self) # calculate their resource min based on whether subsidies are active or not
@@ -185,10 +203,28 @@ class FirmAgent(Agent):
         self.update_prob_adoption()             # Firms update their probability of adoption.
         self.update_adoption_status()           # Their adoption status is updated.
 
+    def store_previous_state(self):
+        """Snapshot the agent's state at the start of the tick."""
+        self.prev_beliefs = self.beliefs.copy()
+        self.prev_adoption_stage = self.adoption_stage
+        self.prev_feasible = self.feasible
+        self.prev_prob_adoption = self.prob_adoption
+        self.prev_perceived_net_benefit = self.perceived_net_benefit
+        self.prev_time_in_stage = self.time_in_stage
 
+
+    def advance(self):
+        """Commit the next state after all agents have computed."""
+        self.beliefs = self.next_beliefs.copy()
+        self.feasible = self.next_feasible
+        self.prob_adoption = self.next_prob_adoption
+        self.perceived_net_benefit = self.next_perceived_net_benefit
+        self.adoption_stage = self.next_adoption_stage
+        self.time_in_stage = self.next_time_in_stage
+        self.perceivedPeerAdoption = self.next_perceivedPeerAdoption
 
     def observe_network(self):
-        """ Observe the beliefs of network members (peers and competitors) and store the information"""
+        """ Observe the beliefs of network members (peers and competitors) and store the information. This makes sure all agents have information from the same timepoint so we don't get order effects"""
         self.peer_ids = [] # initialise empty lists to store peer and competitor IDs
         self.competitor_ids = []
         self.peer_beliefs_raw = {b: [] for b in self.beliefs}  # Store each peer's beliefs
@@ -200,49 +236,12 @@ class FirmAgent(Agent):
 
             if link_type == "peer":                 # If the link type is "peer"    
                 self.peer_ids.append(node_id)       # Add to peer_ids   
-                peer = self.model.grid.get_cell_list_contents([node_id])[0] # Get the peer agent object
                 for b in self.beliefs:
-                    self.peer_beliefs_raw[b].append(peer.beliefs[b]) # Store the peer's beliefs in the raw list
+                    self.peer_beliefs_raw[b].append(agent.prev_beliefs[b]) # Store the peer's beliefs in the raw list
             
             elif link_type == "competitor":         # If they are a competitior...
                 self.competitor_ids.append(node_id) # Store their node id
-                self.competitor_adoptions.append((agent.prev_adoption_stage, agent.adoption_stage)) # as well as their adoption status
-
-    def update_perceived_peer_adoption(self):
-        # Combine peer and competitor ids
-        neighbour_ids = list(set(self.peer_ids + self.competitor_ids))
-
-        total = len(neighbour_ids)
-        if total == 0:
-            self.perceivedPeerAdoption = 0.0
-            return
-
-        adopted_stages = {"D. Has a WTP"}
-
-        num_with_plan = 0
-        for nid in neighbour_ids:
-            contents = self.model.grid.get_cell_list_contents([nid])
-            if not contents:
-                continue  # No agent on that node
-            neighbour = contents[0]
-            if neighbour.adoption_stage in adopted_stages:
-                num_with_plan += 1
-
-        self.perceivedPeerAdoption = num_with_plan / total # At the moment this is just a latent variable to observe.
-
-    def update_knowledge_partially(self):
-        non_adopted = {"A. No intention", "B. May consider"}
-        adopted = {"C. Is developing a WTP","D. Has a WTP"}
-
-        for prev_stage, curr_stage in self.competitor_adoptions:
-            if prev_stage in non_adopted and curr_stage in adopted:
-                self.beliefs["motivations"] = np.clip(self.beliefs["motivations"] + self.competitor_inference_increment_eff, 0.00, 1.0)
-                self.beliefs["perceivedBarriers"] = np.clip(self.beliefs["perceivedBarriers"] - self.competitor_inference_increment_eff, 0.00, 1.0)
-                self.beliefs["awareness"]=1
-
-        # for prev_stage, curr_stage in self.competitor_adoptions:
-        #     if prev_stage in adopted and curr_stage in non_adopted:
-        #         self.beliefs["motivations"] -= self.competitor_inference_increment_eff
+                self.competitor_adoptions.append((agent.prev_adoption_stage, agent.prev_adoption_stage)) # as well as their previous adoption status
 
     def update_knowledge_fully(self):
         for b in self.beliefs:  # Loop through all belief dimensions
@@ -252,13 +251,13 @@ class FirmAgent(Agent):
 
             # Awareness is a special case as it is binary (0 OR 1)
             if b == "awareness":
-                if any(v == 1 for v in peer_values): # If any peer of theirs is aware, then they are also aware
-                    self.beliefs["awareness"] = 1
+                if any(v == 1 for v in peer_values): # If any peer of theirs is aware, then they are also aware 
+                    self.next_beliefs["awareness"] = 1
                 continue  # Skip the continuous update for awareness
 
             # Continuous beliefs (0 -> 1)
             social_mean = sum(peer_values) / len(peer_values) # take an average of peer values
-            personal = self.beliefs[b] # agent's current belief
+            personal = self.prev_beliefs[b] # agent's current belief
             baseline = self.beliefs_initial[b] # agent's initial belief
 
             realism_pull = (
@@ -266,18 +265,52 @@ class FirmAgent(Agent):
                 else self.model.realism_pull_constraints
             ) # Use the correct realism pull based on belief type i.e., it is stronger for constraints (objective) than for subjective beliefs
 
-            self.beliefs[b] = np.clip(( self.beliefs[b]# New belief = old belief + 
+            self.next_beliefs[b] = np.clip(( personal # New belief = old belief + 
                + self.learning_rate_eff * (social_mean - personal) # (learning rate × peer signal gap) nudges beliefs towards the social average +
                + realism_pull * (baseline - personal) # (realism pull × gap from original belief)  pulls beliefs back toward where they started
             ), 0.0, 1.0)
+
+    def update_knowledge_partially(self): # If a weak tie has a plan, then they infer this as a signal that WTPs are a net benefit
+        non_adopted = {"A. No intention", "B. May consider"}
+        adopted = {"C. Is developing a WTP","D. Has a WTP"}
+
+        for competitor_stage_prev, _ in self.competitor_adoptions:
+            if competitor_stage_prev in adopted:
+                self.next_beliefs["motivations"] = np.clip(
+                    self.next_beliefs["motivations"] + self.competitor_inference_increment_eff, 0.0, 1.0)
+                self.next_beliefs["perceivedBarriers"] = np.clip(
+                    self.next_beliefs["perceivedBarriers"] - self.competitor_inference_increment_eff, 0.0, 1.0)
+                self.next_beliefs["awareness"] = 1
     
+    def update_perceived_peer_adoption(self):
+        # Combine peer and competitor ids
+        neighbour_ids = list(set(self.peer_ids + self.competitor_ids))
+        total = len(neighbour_ids)
+
+        if total == 0: # If they have no neighbours then perceived peer adoption is 0
+            self.perceivedPeerAdoption = 0.0
+            return
+
+        adopted_stages = {"D. Has a WTP"}
+        num_with_plan = 0
+
+        for nid in neighbour_ids: # Counter for peer adoption
+            contents = self.model.grid.get_cell_list_contents([nid])
+            if not contents:
+                continue  # No agent on that node
+            neighbour = contents[0]
+            if neighbour.prev_adoption_stage in adopted_stages:
+                num_with_plan += 1
+
+        self.next_perceivedPeerAdoption = num_with_plan / total # At the moment this is just a latent variable to observe.    
+
     def update_perceived_feasibility(self):
         self.feasible = (
-            self.beliefs["resources"] >= self.r_min_eff and
-            self.beliefs["knowledge"] >= self.k_min and
-            self.beliefs["organisationalReadiness"] >= self.or_min_eff and
-            self.beliefs["publicTransport"] >= self.pt_min and
-            self.beliefs["awareness"] == 1
+            self.next_beliefs["resources"] >= self.r_min_eff and
+            self.next_beliefs["knowledge"] >= self.k_min and
+            self.next_beliefs["organisationalReadiness"] >= self.or_min_eff and
+            self.next_beliefs["publicTransport"] >= self.pt_min and
+            self.next_beliefs["awareness"] == 1
         ) # Feasible = True if all constraints  are above or = to the minimum thresholds, otherwise it is false
 
     def update_prob_adoption(self):
@@ -286,21 +319,21 @@ class FirmAgent(Agent):
         #     raise ValueError(f"Unknown size category: {self.size}")
         
         # Calculate the perceived net benefit of adopting a WTP
-        self.perceived_net_benefit = self.model.obj_net_benefit_min + (
+        self.next_perceived_net_benefit = self.model.obj_net_benefit_min + (
             (self.model.obj_net_benefit_max - self.model.obj_net_benefit_min) * (
-                (self.beliefs["motivations"] - (self.beliefs["perceivedBarriers"])))) # estimated net benefit is equal to the minimum plausible net benefit plus a range of plausible net benefit values that depends on the perception of costs and benefits of adoption (which are scaled between 0 and 1). 
+                (self.next_beliefs["motivations"] - (self.next_beliefs["perceivedBarriers"])))) # estimated net benefit is equal to the minimum plausible net benefit plus a range of plausible net benefit values that depends on the perception of costs and benefits of adoption (which are scaled between 0 and 1). 
         
-        if self.feasible:                                                            # If the WTP is perceived as feasible, then:
-            self.prob_adoption = 1 / (1 + math.exp(-0.08*(self.perceived_net_benefit-126)))          # The logit (sigmoidal) function converts the perceived net benefit into a probability of adoption for a range of NB from 126 to 250. Which is what we want when size does not influence
+        if self.next_feasible:                                                            # If the WTP is perceived as feasible, then:
+            self.next_prob_adoption = 1 / (1 + math.exp(-0.08*(self.next_perceived_net_benefit-126)))          # The logit (sigmoidal) function converts the perceived net benefit into a probability of adoption for a range of NB from 126 to 250. Which is what we want when size does not influence
         else:
-            self.prob_adoption = 0                                                   # If a WTP is not perceived as feasible, then the probability of adoption is 0
+            self.next_prob_adoption = 0                                                   # If a WTP is not perceived as feasible, then the probability of adoption is 0
 
     def update_adoption_status(self):                                                # Update the adoption stage based on the probability of adoption
         # These are vairables local to this function only (i.e., they exist only during executation and can't be accessed from outside): old_stage, candidate_stage, allowed_stage
-        old_stage = self.adoption_stage    # Record the adoption stage
-        p = self.prob_adoption              # Based on probability of adoption update their new_stage... 
+        old_stage = self.prev_adoption_stage    # Record the adoption stage
+        p = self.next_prob_adoption              # Based on probability of adoption update their new_stage... 
+
         #  1. First find the candidate stage implied by their probability of adoption
-        # These thresholds will be based on survey data eventually
         if p < 0.14:
             candidate_stage  = "A. No intention"
         elif p < 0.58:
@@ -308,9 +341,7 @@ class FirmAgent(Agent):
         elif p < 0.79:
             candidate_stage  = "C. Is developing a WTP"
         else:
-            candidate_stage  = "D. Has a WTP"
-
-            # Agents are allowed to regress to lower stages of adoption
+            candidate_stage  = "D. Has a WTP"         # These thresholds are based on survey data, and agents can regress
 
         # 2. Check time lag rules (i.e., block transitions until they have had time to transition)
         allowed_stage = candidate_stage 
@@ -324,5 +355,5 @@ class FirmAgent(Agent):
         self.adoption_stage = allowed_stage # The adoption stage is whatever is allowed, either the candidate stage or old stage depending on the lags
 
         # 4. Reset counter only if the stage actually changed
-        if self.adoption_stage != old_stage: # If adoption stage is different to old stage
-            self.time_in_stage = 0 # Reset the counter 
+        if self.next_adoption_stage != old_stage: # If adoption stage is different to old stage
+            self.next_time_in_stage = 0 # Reset the counter 
