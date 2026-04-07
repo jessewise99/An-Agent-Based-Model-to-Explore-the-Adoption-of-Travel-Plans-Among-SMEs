@@ -52,12 +52,18 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
     def __init__(self, num_agents:int, learning_rate:float, competitor_inference_increment:float,
                  realism_pull_constraints:float, organisationalReadiness_min:float,
                  publicTransport_min:float, knowledge_min:float, resource_min:float,
-                 obj_net_benefit_min:int, obj_net_benefit_max:int, shock_parameters=None,seed=None, active_shocks=None, debug=True): #_init_ means the model is being intialised
+                 obj_net_benefit_min:int, obj_net_benefit_max:int, 
+                 init_positive_shift: float, init_barrier_shift: float,
+                 shock_parameters=None,seed=None, active_shocks=None, debug=True): #_init_ means the model is being intialised
         super().__init__(seed=seed)  # This *initialises* the parent Model class and sets the random seed
 
         self.num_agents = int(num_agents) # Makes sure its an integer
         self.running = True
         self.debug=bool(debug) # This helps me debug
+
+        # Used for calibrating starting distributions of beleifs
+        self.init_positive_shift = init_positive_shift
+        self.init_barrier_shift = init_barrier_shift
 
         # Exogenous shocks
         self.active_shocks = set(active_shocks) if active_shocks is not None else set() # Should be set in run.py

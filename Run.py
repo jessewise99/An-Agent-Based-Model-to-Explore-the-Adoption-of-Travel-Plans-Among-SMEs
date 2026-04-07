@@ -20,21 +20,28 @@ import seaborn as sns # Data visualization tools.
 import matplotlib.pyplot as plt
 import networkx as nx
 import matplotlib.cm as cm
+import matplotlib.animation as animation
+from matplotlib.figure import Figure
 import mesa
 import pyreadr # To write an .rds file
 from collections import defaultdict
 from collections import Counter
-import matplotlib.animation as animation
+
 
 ######################################################################### Running the model #########################################################################
 
 # These parameters will need to be tuned and calibrated: learning_rate, realism_pull_constraints, realism_pull_sociallyInfluencedVars, competitor_inference_increment
 
+T =  28 										# The program runs for 28 years because I have data from 1997 to 2025.
+N =  500                                        # Set how many agents there are in the model. 
+
 model = AdoptionModel(
-    num_agents= 500, # Set how many agents there are in the model. This needs to be <= the number of firms in the data file.
+    num_agents= N, 
     learning_rate = 0.8,									# This is the rate at which firms learn from other firms
     competitor_inference_increment=0.50, # This is how much an agent's perceived benefits increases or decreases depening on their compeitors adoption stage. (at the moment = to learning rate* learning)
     realism_pull_constraints = 0.5,								# Higher number means that beliefs as less influenced.
+    init_positive_shift = 0.5,                                  # This is used for calibration of initial distributions of beliefs
+    init_barrier_shift = 0.5,                                   # This is used for calibration of initial distributions of beliefs - but for perceived barriers because it goes in the other direction
     organisationalReadiness_min= 0.4367,										# This is the organisational readiness threshold, if exceeded they may be able to adopt
     publicTransport_min= 0.5883,										# This is the public transport threshold, if exceeded they may be able to adopt
     resource_min=.5683,										# This is resource threshold, if exceeded they may be able to adopt
@@ -44,8 +51,6 @@ model = AdoptionModel(
     active_shocks = None,# {"subsidy", "proofOfROI"}, # These are the policies in effect. Needs to be a set.
     shock_parameters = None, #{"subsidy": 0.5, "proofOfROI":0.3} # These are the strengths of the policies, it needs to be a dictionary. It will look like this {"caseStudy": 0.3, "subsidy": 0.2}
     )  # Create an instance of the AdoptionModel with the above parameters.
-
-T =  28 										# The program runs for 28 years because I have data from 1997 to 2025.
 
 ######################################################################### Visualisations #########################################################################
 
@@ -112,6 +117,8 @@ sns.histplot(beginning_data["Adoption Probability"], bins=20)
 plt.title("Distribution of Intention to Adopt a Workplace Travel Plan at Beginning of Simulation")
 plt.xlabel("Probability of adopting a workplace travel plan")
 plt.ylabel("Number of agents")
+plt.grid()
+plt.ylim(0, N)
 plt.show()
 
 # Plot histogram of adoption probabilities at end
@@ -120,6 +127,8 @@ sns.histplot(final_data["Adoption Probability"], bins=20)
 plt.title("Distribution of Intention to Adopt a Workplace Travel Plan at Final Tick")
 plt.xlabel("Probability of adopting a workplace travel plan")
 plt.ylabel("Number of agents")
+plt.grid()
+plt.ylim(0, N)
 plt.show()
 
 # Plot histogram of perceived NBs at beginning
@@ -128,6 +137,8 @@ sns.histplot(beginning_data["Perceived Net Benefit"], bins=20)
 plt.title("Distribution of Perceived Net Benefit of Adoption at Beginning of Simulation")
 plt.xlabel("Perceived Net Benefit of adopting a workplace travel plan")
 plt.ylabel("Number of agents")
+plt.grid()
+plt.ylim(0, N)
 plt.show()
 
 # Plot histogram of perceived NBs at end
@@ -136,6 +147,8 @@ sns.histplot(final_data["Perceived Net Benefit"], bins=20)
 plt.title("Distribution of  Perceived Net Benefit of Adoption at Final Tick")
 plt.xlabel("Perceived Net Benefit of adopting a workplace travel plan")
 plt.ylabel("Number of agents")
+plt.ylim(0, N)
+plt.grid()
 plt.show()
 
 # --- Number of adopters over time ---
@@ -145,6 +158,8 @@ sns.lineplot(x="index", y="Num_Developers", data=model_data, marker="o")
 plt.title("Adoption Curve: Number of Firms Developing a WTP Over Time")
 plt.xlabel("Step")
 plt.ylabel("Number of Firms Developing a WTP")
+plt.grid()
+plt.ylim(0, N)
 plt.show()
 
 plt.figure(figsize=(16, 10))
@@ -152,6 +167,8 @@ sns.lineplot(x="index", y="Num_Adopters", data=model_data, marker="o")
 plt.title("Adoption/Infection Curve: Number of Firms with a WTP Over Time")
 plt.xlabel("Step")
 plt.ylabel("Number of Firms Who Have Adopted a WTP")
+plt.grid()
+plt.ylim(0, N)
 plt.show()
 
 # Compute average adoption probability per step
@@ -163,6 +180,8 @@ sns.lineplot(x="Step", y="Adoption Probability", data=avg_prob, marker="o")
 plt.title("Average Probability of Adoption Over Time")
 plt.xlabel("Step")
 plt.ylabel("Average Probability")
+plt.grid()
+plt.ylim(0, 1)
 plt.show()
 
 # ######################################################################### Parameter Sweeps with Batch Runner #########################################################################
@@ -173,7 +192,7 @@ plt.show()
 #           "competitor_inference_increment":  [0.0, 0.1, 0.2, 0.3, 0.4, 0.5], # This is how much an agent's perceived benefits increases or decreases depening on their compeitors adoption stage. (at the moment = to learning rate* learning)
 #           "realism_pull_constraints" :  [0.0, 0.25, 0.5, 0.75, 1],								# For time and money constraints set the realism pull as higher for these very objective concepts
 #           ## These are not changing, but I have to pass them in anyway
-#           "num_agents": 500, # Set how many agents there are in the model. This needs to be <= the number of firms in the data file.
+#           "num_agents": N, # Set how many agents there are in the model. This needs to be <= the number of firms in the data file.
 #           "organisationalReadiness_min": 0.4367,										# This is the organisational readiness threshold, if exceeded they may be able to adopt
 #           "publicTransport_min": 0.5883,										# This is the public transport threshold, if exceeded they may be able to adopt
 #           "resource_min" :.5683,										# This is resource threshold, if exceeded they may be able to adopt

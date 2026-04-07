@@ -102,6 +102,18 @@ class FirmAgent(Agent):
         policyChampion_weights=[0.145, 0.298, 0.366, 0.153, 0.038]
         wordOfMouth_weights=[0.145, 0.298, 0.366, 0.153, 0.038] # Need to come back and edit this
 
+        def tilt_weights(weights, strength, direction="up"):
+            idx = np.arange(len(weights))
+            if direction == "up":
+                multipliers = np.exp(strength * idx)
+            elif direction == "down":
+                multipliers = np.exp(-strength * idx)
+            else:
+                raise ValueError("direction must be 'up' or 'down'")
+
+            tilted = np.array(weights, dtype=float) * multipliers
+            tilted /= tilted.sum()
+            return tilted.tolist()
         
         # Draw category then store both category and numeric sensitivity
         def draw_sensitivity(weights):
@@ -117,14 +129,28 @@ class FirmAgent(Agent):
             "policyChampion": draw_sensitivity(policyChampion_weights),
         }
 
-        ### Beliefs dictionary - subject to social learning (initial values drawn from plausible uniform distribution, but end values should match my survey data)
+        levels_5 = [0, 0.25, 0.5, 0.75, 1]
+
+        ### Beliefs dictionary - subject to social learning (initial values drawn from plausible uniform distribution (tilted during calibration), but end values should match my survey data)
         self.beliefs = {
-            "motivations": self.model.random.choices([0, 0.25, 0.5, 0.75, 1], weights=[0.2351, 0.2498, 0.3420, 0.0977, 0.0754])[0], # No logitudinal data so I am estimating it based on the other variables
-            "perceivedBarriers": self.model.random.choices([0, 0.25, 0.5, 0.75, 1], weights=[0.2351, 0.2498, 0.3420, 0.0977, 0.0754])[0], # No logitudinal data so I am estimating it based on the other variables
-            "knowledge": self.model.random.choices([0, 0.25, 0.5, 0.75, 1], weights=[0.2351, 0.2498, 0.3420, 0.0977, 0.0754])[0], # No logitudinal data so I am estimating it based on the other variables
-            "organisationalReadiness": self.model.random.choices([0, 0.25, 0.5, 0.75, 1], weights=[0.288, 0.178, 0.278, 0.118, 0.138])[0], # Coleman (2000) data used as a proxy
-            "publicTransport": self.model.random.choices([0, 0.2, 0.4, 0.6, 0.8, 1], weights=[0.05, 0.23, 0.38, 0.26, 0.07, 0.01])[0], # Coleman (2000) data used as a proxy
-            "resources": self.model.random.choices([0, 0.25, 0.5, 0.75, 1], weights=[0.295, 0.265, 0.31, 0.075, 0.055])[0], # Coleman (2000) data used as a proxy
+            "motivations": self.model.random.choices(levels_5, 
+                                                     weights=tilt_weights([0.2351, 0.2498, 0.3420, 0.0977, 0.0754], self.model.init_positive_shift, direction="up"))[0], # No logitudinal data so I am estimating it based on the other variables
+
+            "perceivedBarriers": self.model.random.choices(levels_5, 
+                                                           weights=tilt_weights([0.2351, 0.2498, 0.3420, 0.0977, 0.0754],self.model.init_barrier_shift, direction="down"))[0], # No logitudinal data so I am estimating it based on the other variables
+
+            "knowledge": self.model.random.choices(levels_5, 
+                                                   weights=tilt_weights([0.2351, 0.2498, 0.3420, 0.0977, 0.0754], self.model.init_positive_shift, direction="up"))[0], # No logitudinal data so I am estimating it based on the other variables
+
+            "organisationalReadiness": self.model.random.choices(levels_5, 
+                                                                 weights=tilt_weights([0.288, 0.178, 0.278, 0.118, 0.138], self.model.init_positive_shift, direction="up"))[0], # Coleman (2000) data used as a proxy
+
+            "publicTransport": self.model.random.choices([0, 0.2, 0.4, 0.6, 0.8, 1], 
+                                                         weights=tilt_weights([0.05, 0.23, 0.38, 0.26, 0.07, 0.01], self.model.init_positive_shift, direction="up"))[0], # Coleman (2000) data used as a proxy
+
+            "resources": self.model.random.choices(levels_5, 
+                                                   weights=tilt_weights([0.295, 0.265, 0.31, 0.075, 0.055], self.model.init_positive_shift, direction="up"))[0], # Coleman (2000) data used as a proxy
+            
             "awareness": self.model.random.choices([0, 1], weights=[0.64, 0.36])[0] # Coleman 2000
             }
 
@@ -288,7 +314,7 @@ class FirmAgent(Agent):
         total = len(neighbour_ids)
 
         if total == 0: # If they have no neighbours then perceived peer adoption is 0
-            self.perceivedPeerAdoption = 0.0
+            self.next_perceivedPeerAdoption = 0.0
             return
 
         adopted_stages = {"D. Has a WTP"}
@@ -305,7 +331,7 @@ class FirmAgent(Agent):
         self.next_perceivedPeerAdoption = num_with_plan / total # At the moment this is just a latent variable to observe.    
 
     def update_perceived_feasibility(self):
-        self.feasible = (
+        self.next_feasible = (
             self.next_beliefs["resources"] >= self.r_min_eff and
             self.next_beliefs["knowledge"] >= self.k_min and
             self.next_beliefs["organisationalReadiness"] >= self.or_min_eff and
@@ -348,11 +374,11 @@ class FirmAgent(Agent):
 
         # DevelopersLag: Must spend at least 2 years in development before moving to adoption
         if old_stage == "C. Is developing a WTP" and candidate_stage in {"D. Has a WTP"}:
-            if self.time_in_stage < 2:
+            if self.next_time_in_stage < 2:
                 allowed_stage = old_stage
 
         # 3. Commit the stage
-        self.adoption_stage = allowed_stage # The adoption stage is whatever is allowed, either the candidate stage or old stage depending on the lags
+        self.next_adoption_stage = allowed_stage # The adoption stage is whatever is allowed, either the candidate stage or old stage depending on the lags
 
         # 4. Reset counter only if the stage actually changed
         if self.next_adoption_stage != old_stage: # If adoption stage is different to old stage
