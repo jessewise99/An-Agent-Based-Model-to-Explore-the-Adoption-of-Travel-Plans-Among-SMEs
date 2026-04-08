@@ -61,8 +61,8 @@ class FirmAgent(Agent):
                         "Wales", "West Midlands", "Yorkshire and The Humber"]
         postcode_weights=[0.056, 0.0905, 0.1853, 0.1078, 0.0259, 0.0603, 0.1853, 0.0819, 0.0431, 0.0862, 0.0777] # Same here
 
-        network_cats=[None, "Chamber of Commerce", "FSB","BACP", "CII", "CHSA"] 
-        network_weights=[0.7074, 0.1202, 0.0689,  0.0345,  0.0345,  0.0345] # Approx 25% are in a network. Often more than one network at a time. For now I start with a simple model where firms are only members of 1 network. Again, to make it sum to 1, I've had to change the proportions slightly.
+        network_cats=[None, "Chamber of Commerce", "FSB","British Assocation for Counselling & Psychotherapy", "Chartered Insurance Institute", "Cleaning & Hygiene Suppliers Assocaiation", "AgeUk", "ASPIRE", "National Care Association", "Road Haulage Association", "Other"] 
+        network_weights=[0.71, 0.02, 0.02,  0.02,  0.02,  0.02, 0.02, 0.02, 0.02, 0.02, 0.11] # Approx 25% are in a network. Often more than one network at a time. For now I start with a simple model where firms are only members of 1 network. Again, to make it sum to 1, I've had to change the proportions slightly.
 
         # size_cats = ["10-19", "20-49","50-99", "100-249"]
         # size_weights=[0.16, 0.28, 0.20, 0.36]
@@ -208,6 +208,7 @@ class FirmAgent(Agent):
         self.update_perceived_feasibility()     # Firms update their perceived feasibility of adopting a WTP.
         self.update_prob_adoption()             # Firms update their probability of adoption.
         self.update_adoption_status()           # Their adoption status is updated.
+        self.advance()
         self.store_previous_state()             # So I save the OG values but have calculate adoption status based on values
 
     def step(self):
@@ -372,10 +373,14 @@ class FirmAgent(Agent):
         # 2. Check time lag rules (i.e., block transitions until they have had time to transition)
         allowed_stage = candidate_stage 
 
-        # DevelopersLag: Must spend at least 2 years in development before moving to adoption
-        if old_stage == "C. Is developing a WTP" and candidate_stage in {"D. Has a WTP"}:
+        # Force firms to pass through development before adoption
+        if candidate_stage == "D. Has a WTP" and old_stage != "C. Is developing a WTP":
+            allowed_stage = "C. Is developing a WTP"
+
+        # Then apply the two year lag within development
+        if old_stage == "C. Is developing a WTP" and candidate_stage == "D. Has a WTP":
             if self.next_time_in_stage < 2:
-                allowed_stage = old_stage
+                allowed_stage = "C. Is developing a WTP"
 
         # 3. Commit the stage
         self.next_adoption_stage = allowed_stage # The adoption stage is whatever is allowed, either the candidate stage or old stage depending on the lags
