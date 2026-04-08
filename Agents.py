@@ -268,7 +268,7 @@ class FirmAgent(Agent):
             
             elif link_type == "competitor":         # If they are a competitior...
                 self.competitor_ids.append(node_id) # Store their node id
-                self.competitor_adoptions.append((agent.prev_adoption_stage, agent.prev_adoption_stage)) # as well as their previous adoption status
+                self.competitor_adoptions.append(agent.prev_adoption_stage) # as well as their previous adoption status
 
     def update_knowledge_fully(self):
         for b in self.beliefs:  # Loop through all belief dimensions
@@ -301,7 +301,7 @@ class FirmAgent(Agent):
         non_adopted = {"A. No intention", "B. May consider"}
         adopted = {"C. Is developing a WTP","D. Has a WTP"}
 
-        for competitor_stage_prev, _ in self.competitor_adoptions:
+        for competitor_stage_prev in self.competitor_adoptions:
             if competitor_stage_prev in adopted:
                 self.next_beliefs["motivations"] = np.clip(
                     self.next_beliefs["motivations"] + self.competitor_inference_increment_eff, 0.0, 1.0)
@@ -374,13 +374,18 @@ class FirmAgent(Agent):
         allowed_stage = candidate_stage 
 
         # Force firms to pass through development before adoption
-        if candidate_stage == "D. Has a WTP" and old_stage != "C. Is developing a WTP":
+        if candidate_stage == "D. Has a WTP" and old_stage not in {"C. Is developing a WTP", "D. Has a WTP"}:
             allowed_stage = "C. Is developing a WTP"
 
         # Then apply the two year lag within development
         if old_stage == "C. Is developing a WTP" and candidate_stage == "D. Has a WTP":
             if self.next_time_in_stage < 2:
                 allowed_stage = "C. Is developing a WTP"
+
+        # There was too much noise with firms flipping around the threshold point, so now they have a plan for two years before they can abandon it
+        if old_stage == "D. Has a WTP" and candidate_stage != "D. Has a WTP":
+            if self.next_time_in_stage < 5:
+                allowed_stage = "D. Has a WTP"
 
         # 3. Commit the stage
         self.next_adoption_stage = allowed_stage # The adoption stage is whatever is allowed, either the candidate stage or old stage depending on the lags

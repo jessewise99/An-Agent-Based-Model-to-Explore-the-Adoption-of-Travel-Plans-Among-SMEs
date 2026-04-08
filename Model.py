@@ -53,7 +53,8 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
                  realism_pull_constraints:float, organisationalReadiness_min:float,
                  publicTransport_min:float, knowledge_min:float, resource_min:float,
                  obj_net_benefit_min:int, obj_net_benefit_max:int, 
-                 init_positive_shift: float, init_barrier_shift: float,
+                 init_positive_shift: float,
+                 collect_agent_data:bool, 
                  shock_parameters=None,seed=None, active_shocks=None, debug=True): #_init_ means the model is being intialised
         super().__init__(seed=seed)  # This *initialises* the parent Model class and sets the random seed
 
@@ -63,7 +64,7 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
 
         # Used for calibrating starting distributions of beleifs
         self.init_positive_shift = init_positive_shift
-        self.init_barrier_shift = init_barrier_shift
+        self.init_barrier_shift = init_positive_shift
 
         # Exogenous shocks
         self.active_shocks = set(active_shocks) if active_shocks is not None else set() # Should be set in run.py
@@ -115,19 +116,35 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
             print("Example agent id:", a0.unique_id, "pos:", a0.pos, "degree:", deg)
 
         # Data collection
+        # self.datacollector = DataCollector(
+        #     model_reporters={
+        #         "Num_Considering": lambda m: m.count_adoption_stage("B. May consider"),
+        #         "Num_Developers": lambda m: m.count_adoption_stage("C. Is developing a WTP"),
+        #         "Num_Adopters": lambda m: (m.count_adoption_stage("D. Has a WTP")),
+        #         "Prop_Aware": lambda m: sum(a.beliefs["awareness"] for a in m.agents) / m.num_agents,
+        #     },
+        #     agent_reporters={
+        #         "Adoption Stage": "adoption_stage",
+        #         "Adoption Probability": "prob_adoption",
+        #         "Perceived Net Benefit": "perceived_net_benefit",
+        #         "Awareness": lambda a: a.beliefs["awareness"],
+        #     },
+        # )
+        agent_reporters = {
+            "Adoption Stage": "adoption_stage",
+            "Adoption Probability": "prob_adoption",
+            "Perceived Net Benefit": "perceived_net_benefit",
+            "Awareness": lambda a: a.beliefs["awareness"],
+        } if collect_agent_data else None
+
         self.datacollector = DataCollector(
             model_reporters={
                 "Num_Considering": lambda m: m.count_adoption_stage("B. May consider"),
                 "Num_Developers": lambda m: m.count_adoption_stage("C. Is developing a WTP"),
-                "Num_Adopters": lambda m: (m.count_adoption_stage("D. Has a WTP")),
+                "Num_Adopters": lambda m: m.count_adoption_stage("D. Has a WTP"),
                 "Prop_Aware": lambda m: sum(a.beliefs["awareness"] for a in m.agents) / m.num_agents,
             },
-            agent_reporters={
-                "Adoption Stage": "adoption_stage",
-                "Adoption Probability": "prob_adoption",
-                "Perceived Net Benefit": "perceived_net_benefit",
-                "Awareness": lambda a: a.beliefs["awareness"],
-            },
+            agent_reporters=agent_reporters,
         )
 
         for agent in self.agents:
@@ -157,8 +174,8 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
     def build_network_from_agents(self, agents):
         """
         Build graph from agents using the rule:
-        - edge exists if same postcode OR same non None network
-        - edge type is strong (peer) if in the same network, or it is a weak (competitor) link if they are in the same region
+        - strong ties (peer edge) if agents are in the same None network
+        - weak ties (comeptitor edge) if agents are in the same sector AND region
           otherwise no edge
         """
         G = nx.Graph() # Creates an empty undirected simple graph
@@ -174,28 +191,33 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
             )
 
         # Group by linkage keys. These are two dictionaries acting as grouping structures
-        by_postcode = {}
+        by_sector_postcode = {}
         by_network = {}
 
-        for a in agents: # Filling the by_postcode and by_network lists...
-            by_postcode.setdefault(a.postcode, []).append(a.unique_id) # If this postcode is not already a key, create it with an empty list, then add agent id to that postcode group
-            if a.network is not None and a.network != None: # Then, only if the network value is not None and not the string "None"... 
-                by_network.setdefault(a.network, []).append(a.unique_id) # ... add the agent into by_network under that network label.
+        for a in agents: # Filling the by_sector and by_network lists...
+            # Group by combined sector + postcode for competitor links
+            key = (a.sector, a.postcode)
+            by_sector_postcode.setdefault(key, []).append(a.unique_id)
+
+            # Group by network for peer links
+            if a.network is not None: # If the network is not none
+                by_network.setdefault(a.network, []).append(a.unique_id) # add the agent info to the network label
 
         def add_edges_within_group(id_list):
             for i, j in itertools.combinations(id_list, 2): # For each unique pair of nodes in that group, check whether they should be connected.
-                p1, n1 = G.nodes[i]["postcode"], G.nodes[i]["network"]
-                p2, n2 = G.nodes[j]["postcode"], G.nodes[j]["network"]
-
-                spatial_link = (p1 == p2) # True if same postcode
+                p1, s1, n1 = G.nodes[i]["postcode"], G.nodes[i]["sector"], G.nodes[i]["network"]
+                p2, s2, n2 = G.nodes[j]["postcode"], G.nodes[j]["sector"], G.nodes[j]["network"]
+                
+                # Define link types
+                competitor_link = (s1 == s2 and p1 == p2) # If in the same sector and postcode, they are competitors
                 network_link = (
                     n1 is not None and n2 is not None
-                    and n1 != "None" and n2 != "None" # This is just in case I've put it as a string
-                    and n1 == n2) # True if they are both in the same network
+                    and n1 == n2
+                ) # Network link if they are in the same network
                 
                 if network_link:
                     edge_type ="peer"
-                elif spatial_link:
+                elif competitor_link:
                     edge_type = "competitor" # Peer dominates if both are true
                 else:
                     continue # with no link at all
@@ -209,12 +231,12 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
                 else:
                     G.add_edge(i, j, type=edge_type)
 
-        # Connect within each postcode group
-        for ids in by_postcode.values():
+        # Add competitor edges within sector + postcode groups
+        for ids in by_sector_postcode.values():
             if len(ids) > 1:
                 add_edges_within_group(ids)
 
-        # Connect within each business network group
+        #  Add competitor edges within sector + postcode groups
         for ids in by_network.values():
             if len(ids) > 1:
                 add_edges_within_group(ids)

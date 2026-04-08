@@ -37,10 +37,10 @@ N =  500                                        # Set how many agents there are 
 
 model = AdoptionModel(
     num_agents= N, 
-    learning_rate = 0.8,									# This is the rate at which firms learn from other firms
-    competitor_inference_increment=0.50, # This is how much an agent's perceived benefits increases or decreases depening on their compeitors adoption stage. (at the moment = to learning rate* learning)
-    realism_pull_constraints = 0.5,								# Higher number means that beliefs as less influenced.
-    init_positive_shift = 0.4,                                  # This is used for calibration of initial distributions of beliefs
+    learning_rate = 1,									# This is the rate at which firms learn from other firms
+    competitor_inference_increment=0.40, # This is how much an agent's perceived benefits increases or decreases depening on their compeitors adoption stage.
+    realism_pull_constraints = 0.05,								# Higher number means that beliefs as less influenced.
+    init_positive_shift = 0.3,                                  # This is used for calibration of initial distributions of beliefs
     collect_agent_data= True,
     organisationalReadiness_min= 0.4367,										# This is the organisational readiness threshold, if exceeded they may be able to adopt
     publicTransport_min= 0.5883,										# This is the public transport threshold, if exceeded they may be able to adopt
@@ -67,14 +67,14 @@ stage_colours = {
 fig, ax = plt.subplots(figsize=(10, 10))
 
 def draw_frame(frame):
-    ax.clear()
+    ax.clear() # Wipes each frame clean so the next one can be drawn
 
     # One tick only
-    model.step() # The animation advances the step
-
-    node_colors = [stage_colours[model.grid.get_cell_list_contents([n])[0].adoption_stage] for n in G.nodes()]
-    node_sizes  = [max(50, model.grid.get_cell_list_contents([n])[0].prob_adoption*800) for n in G.nodes()]
-
+    model.step() # The animation advances the step, so th emodel is actively playing while the animation runs
+  
+    node_colors = [stage_colours[model.grid.get_cell_list_contents([n])[0].adoption_stage] for n in G.nodes()] # Iterating over every node, dispaly the colour based on adoption stage
+    node_sizes  = [max(50, model.grid.get_cell_list_contents([n])[0].prob_adoption*500) for n in G.nodes()] # Gives each node a size based on p(adopt)
+    pos = nx.spring_layout(G, k=1.5, seed=42)
     nx.draw(
         G,
         pos,
@@ -83,13 +83,15 @@ def draw_frame(frame):
         node_size=node_sizes,
         edge_color="gray",
         with_labels=False,
-    )
-    ax.set_title(f"Tick {frame + 1}")
+    ) # draws the graph
+    ax.set_title(f"Tick {frame + 1}") # adds a frame counter in the title
 
-ani = animation.FuncAnimation(fig, draw_frame, frames=T, repeat=False, interval=500)
-plt.show()
+ani = animation.FuncAnimation(fig, draw_frame, frames=T, repeat=False, interval=500) # creates the animation. FuncAnimation calls draw_frame(frame) once per frame -> which calls model.step()
+plt.show() # Displays the animattion
 
-model_data = model.datacollector.get_model_vars_dataframe().reset_index()
+model_data = model.datacollector.get_model_vars_dataframe().reset_index() # extracts datacollector output after animation or model.step() wasn't called in every frame
+
+# Sanity checks. If this prints fewer than T rows, it usually means either the animation exited early
 print("Collected steps:", len(model_data))
 print(model_data.head())
 print(model_data.tail())
@@ -102,13 +104,12 @@ last_step = agent_data["Step"].max()
 final_data = agent_data[agent_data["Step"] == last_step]
 
 model_data = model.datacollector.get_model_vars_dataframe().reset_index() #Retrieve model-level data
-print(model_data[["Num_Developers", "Num_Adopters"]].head(15))
-print(model_data["Num_Adopters"].describe())
+print("Describing the number of adopters", model_data["Num_Adopters"].describe())
 print("Any adopters at all:", (model_data["Num_Adopters"] > 0).any())
 agent_data = model.datacollector.get_agent_vars_dataframe()
-print(agent_data["Adoption Probability"].describe())
-print((agent_data["Adoption Probability"] >= 0.79).mean())
-print((agent_data["Adoption Probability"] >= 0.85).mean())
+print("Descibe adpoption probability",agent_data["Adoption Probability"].describe())
+print("The proportion of agents with p(adopt)>=.79 is",(agent_data["Adoption Probability"] >= 0.79).mean())
+print("The proportion of agents with p(adopt)>=.85 is", (agent_data["Adoption Probability"] >= 0.85).mean())
 
 # --- Visualsing the model Adopters in the network ---
 # Plot histogram of adoption probabilities at beginning
