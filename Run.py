@@ -38,8 +38,8 @@ N =  500                                        # Set how many agents there are 
 model = AdoptionModel(
     num_agents= N, 
     learning_rate = 1,									# This is the rate at which firms learn from other firms
-    competitor_inference_increment=0.40, # This is how much an agent's perceived benefits increases or decreases depening on their compeitors adoption stage.
-    realism_pull_constraints = 0.05,								# Higher number means that beliefs as less influenced.
+    competitor_inference_increment=0.025, # This is how much an agent's perceived benefits increases or decreases depening on their compeitors adoption stage.
+    realism_pull_constraints = 0.10,								# Higher number means that beliefs as less influenced.
     init_positive_shift = 0.3,                                  # This is used for calibration of initial distributions of beliefs
     collect_agent_data= True,
     organisationalReadiness_min= 0.4367,										# This is the organisational readiness threshold, if exceeded they may be able to adopt
@@ -73,7 +73,7 @@ def draw_frame(frame):
     model.step() # The animation advances the step, so th emodel is actively playing while the animation runs
   
     node_colors = [stage_colours[model.grid.get_cell_list_contents([n])[0].adoption_stage] for n in G.nodes()] # Iterating over every node, dispaly the colour based on adoption stage
-    node_sizes  = [max(50, model.grid.get_cell_list_contents([n])[0].prob_adoption*500) for n in G.nodes()] # Gives each node a size based on p(adopt)
+    node_sizes  = [max(50, model.grid.get_cell_list_contents([n])[0].prob_adoption*300) for n in G.nodes()] # Gives each node a size based on p(adopt)
     pos = nx.spring_layout(G, k=1.5, seed=42)
     nx.draw(
         G,
@@ -114,62 +114,65 @@ print("The proportion of agents with p(adopt)>=.85 is", (agent_data["Adoption Pr
 # --- Visualsing the model Adopters in the network ---
 # Plot histogram of adoption probabilities at beginning
 plt.figure(figsize=(16, 10))
-sns.histplot(beginning_data["Adoption Probability"], bins=20)
+sns.histplot(beginning_data["Adoption Probability"], bins=20, stat="probability")
 plt.title("Distribution of Intention to Adopt a Workplace Travel Plan at Beginning of Simulation")
 plt.xlabel("Probability of adopting a workplace travel plan")
-plt.ylabel("Number of agents")
+plt.ylabel("Proportion of agents")
 plt.grid()
-plt.ylim(0, N)
+plt.ylim(0, 1)
 plt.show()
 
 # Plot histogram of adoption probabilities at end
 plt.figure(figsize=(16, 10))
-sns.histplot(final_data["Adoption Probability"], bins=20)
+sns.histplot(final_data["Adoption Probability"], bins=20, stat="probability")
 plt.title("Distribution of Intention to Adopt a Workplace Travel Plan at Final Tick")
 plt.xlabel("Probability of adopting a workplace travel plan")
-plt.ylabel("Number of agents")
+plt.ylabel("Proportion of agents")
 plt.grid()
-plt.ylim(0, N)
+plt.ylim(0, 1)
 plt.show()
 
 # Plot histogram of perceived NBs at beginning
 plt.figure(figsize=(16, 10))
-sns.histplot(beginning_data["Perceived Net Benefit"], bins=20)
+sns.histplot(beginning_data["Perceived Net Benefit"], bins=20, stat="probability")
 plt.title("Distribution of Perceived Net Benefit of Adoption at Beginning of Simulation")
 plt.xlabel("Perceived Net Benefit of adopting a workplace travel plan")
-plt.ylabel("Number of agents")
+plt.ylabel("Proportion of agents")
 plt.grid()
-plt.ylim(0, N)
+plt.ylim(0, 1)
 plt.show()
 
 # Plot histogram of perceived NBs at end
 plt.figure(figsize=(16, 10))
-sns.histplot(final_data["Perceived Net Benefit"], bins=20)
+sns.histplot(final_data["Perceived Net Benefit"], bins=20, stat="probability")
 plt.title("Distribution of  Perceived Net Benefit of Adoption at Final Tick")
 plt.xlabel("Perceived Net Benefit of adopting a workplace travel plan")
-plt.ylabel("Number of agents")
-plt.ylim(0, N)
+plt.ylabel("Proportion of agents")
+plt.ylim(0, 1)
 plt.grid()
 plt.show()
 
 # --- Number of adopters over time ---
+model_data["Prop_Developers"] = model_data["Num_Developers"] / N
+model_data["Prop_Adopters"] = model_data["Num_Adopters"] / N
+
 # Plot Adoption over time
 plt.figure(figsize=(16, 10))
-sns.lineplot(x="index", y="Num_Developers", data=model_data, marker="o") 
+sns.lineplot(x="index", y="Prop_Developers", data=model_data, marker="o") 
 plt.title("Adoption Curve: Number of Firms Developing a WTP Over Time")
 plt.xlabel("Step")
-plt.ylabel("Number of Firms Developing a WTP")
+plt.ylabel("Proportion of Firms Developing a WTP")
 plt.grid()
-plt.ylim(0, N)
+plt.ylim(0, 1)
 plt.show()
 
 plt.figure(figsize=(16, 10))
-sns.lineplot(x="index", y="Num_Adopters", data=model_data, marker="o")
+sns.lineplot(x="index", y="Prop_Adopters", data=model_data, marker="o")
 plt.title("Adoption/Infection Curve: Number of Firms with a WTP Over Time")
 plt.xlabel("Step")
-plt.ylabel("Number of Firms Who Have Adopted a WTP")
+plt.ylabel("Proportion of Firms Who Have Adopted a WTP")
 plt.grid()
-plt.ylim(0, N)
+plt.ylim(0, 1)
 plt.show()
 
 # Compute average adoption probability per step
