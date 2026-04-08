@@ -303,6 +303,14 @@ class FirmAgent(Agent):
 
         for competitor_stage_prev in self.competitor_adoptions:
             if competitor_stage_prev in adopted:
+                self.next_beliefs["knowledge"] = np.clip(
+                    self.next_beliefs["knowledge"] + self.competitor_inference_increment_eff, 0.0, 1.0)
+                self.next_beliefs["organisationalReadiness"] = np.clip(
+                    self.next_beliefs["organisationalReadiness"] + self.competitor_inference_increment_eff, 0.0, 1.0)
+                self.next_beliefs["resources"] = np.clip(
+                    self.next_beliefs["resources"] + self.competitor_inference_increment_eff, 0.0, 1.0)
+                self.next_beliefs["publicTransport"] = np.clip(
+                    self.next_beliefs["publicTransport"] + self.competitor_inference_increment_eff, 0.0, 1.0)
                 self.next_beliefs["motivations"] = np.clip(
                     self.next_beliefs["motivations"] + self.competitor_inference_increment_eff, 0.0, 1.0)
                 self.next_beliefs["perceivedBarriers"] = np.clip(
@@ -355,41 +363,60 @@ class FirmAgent(Agent):
         else:
             self.next_prob_adoption = 0                                                   # If a WTP is not perceived as feasible, then the probability of adoption is 0
 
-    def update_adoption_status(self):                                                # Update the adoption stage based on the probability of adoption
-        # These are vairables local to this function only (i.e., they exist only during executation and can't be accessed from outside): old_stage, candidate_stage, allowed_stage
-        old_stage = self.prev_adoption_stage    # Record the adoption stage
-        p = self.next_prob_adoption              # Based on probability of adoption update their new_stage... 
-
-        #  1. First find the candidate stage implied by their probability of adoption
+    def probability_to_stage(self, p):
+        """Map adoption probability to a candidate stage. This is based on thresholds from an empirical survey"""
         if p < 0.14:
-            candidate_stage  = "A. No intention"
-        elif p < 0.58:
-            candidate_stage  = "B. May consider"
-        elif p < 0.79:
-            candidate_stage  = "C. Is developing a WTP"
+            return "A. No intention"
+        if p < 0.58:
+            return "B. May consider"
+        if p < 0.79:
+            return "C. Is developing a WTP"
+        return "D. Has a WTP"
+
+    def update_adoption_status(self):
+        """Update adoption stage using candidate stage, progression rules, and time locks."""
+        old_stage = self.prev_adoption_stage
+        candidate_stage = self.probability_to_stage(self.next_prob_adoption)
+
+        STAGES = [
+            "A. No intention",
+            "B. May consider",
+            "C. Is developing a WTP",
+            "D. Has a WTP",]
+
+        STAGE_TO_INDEX = {stage: i for i, stage in enumerate(STAGES)}
+
+        old_idx = STAGE_TO_INDEX[old_stage]
+        cand_idx = STAGE_TO_INDEX[candidate_stage]
+
+        # Default: move toward candidate, but by at most one stage per tick
+        if cand_idx > old_idx + 1:
+            next_idx = old_idx + 1
+        elif cand_idx < old_idx:
+            next_idx = cand_idx
         else:
-            candidate_stage  = "D. Has a WTP"         # These thresholds are based on survey data, and agents can regress
+            next_idx = cand_idx
 
-        # 2. Check time lag rules (i.e., block transitions until they have had time to transition)
-        allowed_stage = candidate_stage 
+        next_stage = STAGES[next_idx]
 
-        # Force firms to pass through development before adoption
-        if candidate_stage == "D. Has a WTP" and old_stage not in {"C. Is developing a WTP", "D. Has a WTP"}:
-            allowed_stage = "C. Is developing a WTP"
+        # Must spend at least 1 tick in B before moving to C
+        if old_stage == "B. May consider" and candidate_stage in {"C. Is developing a WTP", "D. Has a WTP"}:
+            if self.time_in_stage < 1:
+                next_stage = "B. May consider"
 
-        # Then apply the two year lag within development
+        # Must spend at least 2 ticks in C before moving to D
         if old_stage == "C. Is developing a WTP" and candidate_stage == "D. Has a WTP":
-            if self.next_time_in_stage < 2:
-                allowed_stage = "C. Is developing a WTP"
+            if self.time_in_stage < 1:
+                next_stage = "C. Is developing a WTP"
 
-        # There was too much noise with firms flipping around the threshold point, so now they have a plan for two years before they can abandon it
+        # Must spend at least 5 ticks in D before dropping out
         if old_stage == "D. Has a WTP" and candidate_stage != "D. Has a WTP":
-            if self.next_time_in_stage < 5:
-                allowed_stage = "D. Has a WTP"
+            if self.time_in_stage < 3:
+                next_stage = "D. Has a WTP"
 
-        # 3. Commit the stage
-        self.next_adoption_stage = allowed_stage # The adoption stage is whatever is allowed, either the candidate stage or old stage depending on the lags
+        self.next_adoption_stage = next_stage
 
-        # 4. Reset counter only if the stage actually changed
-        if self.next_adoption_stage != old_stage: # If adoption stage is different to old stage
-            self.next_time_in_stage = 0 # Reset the counter 
+        if next_stage != old_stage:
+            self.next_time_in_stage = 0
+        else:
+            self.next_time_in_stage = self.time_in_stage + 1
