@@ -89,6 +89,8 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
         self.obj_net_benefit_min = obj_net_benefit_min
         self.obj_net_benefit_max = obj_net_benefit_max
 
+        self.current_year = 1997
+
         # 1. Create agents first (they sample their own attributes inside FirmAgent which is my definintion of an agent)
         created_agents = [FirmAgent(self) for _ in range(self.num_agents)]
 
@@ -115,21 +117,6 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
             deg = len(list(self.G.neighbors(a0.unique_id)))
             print("Example agent id:", a0.unique_id, "pos:", a0.pos, "degree:", deg)
 
-        # Data collection
-        # self.datacollector = DataCollector(
-        #     model_reporters={
-        #         "Num_Considering": lambda m: m.count_adoption_stage("B. May consider"),
-        #         "Num_Developers": lambda m: m.count_adoption_stage("C. Is developing a WTP"),
-        #         "Num_Adopters": lambda m: (m.count_adoption_stage("D. Has a WTP")),
-        #         "Prop_Aware": lambda m: sum(a.beliefs["awareness"] for a in m.agents) / m.num_agents,
-        #     },
-        #     agent_reporters={
-        #         "Adoption Stage": "adoption_stage",
-        #         "Adoption Probability": "prob_adoption",
-        #         "Perceived Net Benefit": "perceived_net_benefit",
-        #         "Awareness": lambda a: a.beliefs["awareness"],
-        #     },
-        # )
         agent_reporters = {
             "Adoption Stage": "adoption_stage",
             "Adoption Probability": "prob_adoption",
@@ -143,6 +130,7 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
                 "Num_Developers": lambda m: m.count_adoption_stage("C. Is developing a WTP"),
                 "Num_Adopters": lambda m: m.count_adoption_stage("D. Has a WTP"),
                 "Prop_Aware": lambda m: sum(a.beliefs["awareness"] for a in m.agents) / m.num_agents,
+                "Year": lambda m: m.current_year,
             },
             agent_reporters=agent_reporters,
         )
@@ -170,6 +158,7 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
             agent.advance()
 
         self.datacollector.collect(self) # Collect data
+        self.current_year += 1 # add the year
 
     def build_network_from_agents(self, agents):
         """

@@ -32,7 +32,7 @@ from collections import Counter
 
 # These parameters will need to be tuned and calibrated: learning_rate, realism_pull_constraints, realism_pull_sociallyInfluencedVars, competitor_inference_increment
 
-T =  28 										# The program runs for 28 years because I have data from 1997 to 2025.
+T =  27 										# The model runs for 28 years because I have data from 1997 to 2025. in Step 0 they don't learn from each other
 N =  500                                        # Set how many agents there are in the model. 
 
 model = AdoptionModel(
@@ -153,23 +153,39 @@ plt.grid()
 plt.show()
 
 # --- Number of adopters over time ---
-model_data["Prop_Developers"] = model_data["Num_Developers"] / N
 model_data["Prop_Adopters"] = model_data["Num_Adopters"] / N
+model_data["Prop_Developers"] = model_data["Num_Developers"] / N
+model_data["Prop_Considering"] = model_data["Num_Considering"] / N
+model_data["Prop_NoIntention"] = 1 - model_data["Prop_Considering"] - model_data["Prop_Developers"] - model_data["Prop_Adopters"]
+
+row = model_data.loc[model_data["Year"] == 2000]
+
+if len(row) == 1:
+    row = row.iloc[0]
+    print(
+        "In the year 2000, expected (0.3325, 0.4625, 0.0825, 0.1225). You got:",
+        row["Prop_NoIntention"],
+        row["Prop_Considering"],
+        row["Prop_Developers"],
+        row["Prop_Adopters"]
+    )
+else:
+    print("Issue: expected 1 row for 2000, got", len(row))
 
 # Plot Adoption over time
 plt.figure(figsize=(16, 10))
-sns.lineplot(x="index", y="Prop_Developers", data=model_data, marker="o") 
+sns.lineplot(x="Year", y="Prop_Developers", data=model_data, marker="o") 
 plt.title("Adoption Curve: Number of Firms Developing a WTP Over Time")
-plt.xlabel("Step")
+plt.xlabel("Year")
 plt.ylabel("Proportion of Firms Developing a WTP")
 plt.grid()
 plt.ylim(0, 1)
 plt.show()
 
 plt.figure(figsize=(16, 10))
-sns.lineplot(x="index", y="Prop_Adopters", data=model_data, marker="o")
+sns.lineplot(x="Year", y="Prop_Adopters", data=model_data, marker="o")
 plt.title("Adoption/Infection Curve: Number of Firms with a WTP Over Time")
-plt.xlabel("Step")
+plt.xlabel("Year")
 plt.ylabel("Proportion of Firms Who Have Adopted a WTP")
 plt.grid()
 plt.ylim(0, 1)

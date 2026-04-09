@@ -207,7 +207,7 @@ class FirmAgent(Agent):
     def initialise_step(self): # This is to derive the variables, just based on firms internal states rather than social learning
         self.update_perceived_feasibility()     # Firms update their perceived feasibility of adopting a WTP.
         self.update_prob_adoption()             # Firms update their probability of adoption.
-        self.update_adoption_status()           # Their adoption status is updated.
+        self.update_adoption_status_FIRSTTICKONLY()           # Their adoption status is updated.
         self.advance()
         self.store_previous_state()             # So I save the OG values but have calculate adoption status based on values
 
@@ -420,3 +420,16 @@ class FirmAgent(Agent):
             self.next_time_in_stage = 0
         else:
             self.next_time_in_stage = self.time_in_stage + 1
+
+    def update_adoption_status_FIRSTTICKONLY(self):
+        """On the first tick we're just updating adoption status based on their beliefs etc, so there should be no time lags."""
+        if self.next_prob_adoption < 0.14:
+            self.next_adoption_stage = "A. No intention"
+        elif self.next_prob_adoption < 0.58:
+            self.next_adoption_stage = "B. May consider"
+        elif self.next_prob_adoption < 0.79:
+            self.next_adoption_stage = "C. Is developing a WTP"
+        else:
+            self.next_adoption_stage = "D. Has a WTP"
+
+        self.next_time_in_stage = 0
