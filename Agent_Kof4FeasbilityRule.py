@@ -5,6 +5,7 @@
 #     Purpose: Implementing Pseudocode V2  #
 ############################################
 
+# This agent file uses a k out of 4 decision making rule
 # Think of this file as the decision-maker, given the world what do agents do?
 # It should hold beliefs and sensitiviteis, observe neighbours, compute feasibility, probability of adoption and change adoption state.
 # Note: I have used Chat GPT to help me learn how to use Mesa, and to write this code. All errors are my own. 
@@ -145,7 +146,7 @@ class FirmAgent(Agent):
             "organisationalReadiness": self.model.random.choices(levels_5, 
                                                                  weights=tilt_weights([0.288, 0.178, 0.278, 0.118, 0.138], self.model.init_positive_shift, direction="up"))[0], # Coleman (2000) data used as a proxy
 
-            "publicTransport": self.model.random.choices([0, 0.2, 0.4, 0.6, 0.8, 1], 
+            "publicTransport": self.model.random.choices([0, 0.2, 0.4, 0.6, 0.8, 1],
                                                          weights=tilt_weights([0.05, 0.23, 0.38, 0.26, 0.07, 0.01], self.model.init_positive_shift, direction="up"))[0], # Coleman (2000) data used as a proxy
 
             "resources": self.model.random.choices(levels_5, 
@@ -171,21 +172,21 @@ class FirmAgent(Agent):
         # Dynamic attributes (not beliefs). These are just place holders that get overwritten by agent.initialise_step() in model.py
         self.adoption_stage = "A. No intention"
         self.prev_adoption_stage = self.adoption_stage
-        self.feasible = False
         self.prob_adoption = 0
         self.perceived_net_benefit = None
         self.perceivedPeerAdoption = 0.0
+        self.numberOfConstraintsMet=0
 
         # Snapshots from the previous tick
         self.prev_beliefs = self.beliefs.copy()
-        self.prev_feasible = self.feasible
+        self.prev_numberOfConstraintsMet = self.numberOfConstraintsMet
         self.prev_prob_adoption = self.prob_adoption
         self.prev_perceived_net_benefit = self.perceived_net_benefit
         self.prev_time_in_stage = self.time_in_stage
 
         # Buffers for the next tick
         self.next_beliefs = self.beliefs.copy()
-        self.next_feasible = self.feasible
+        self.next_numberOfConstraintsMet = self.numberOfConstraintsMet
         self.next_prob_adoption = self.prob_adoption
         self.next_perceived_net_benefit = self.perceived_net_benefit
         self.next_adoption_stage = self.adoption_stage
@@ -243,7 +244,7 @@ class FirmAgent(Agent):
     def advance(self):
         """Commit the next state after all agents have computed."""
         self.beliefs = self.next_beliefs.copy()
-        self.feasible = self.next_feasible
+        self.numberOfConstraintsMet = self.next_numberOfConstraintsMet
         self.prob_adoption = self.next_prob_adoption
         self.perceived_net_benefit = self.next_perceived_net_benefit
         self.adoption_stage = self.next_adoption_stage
@@ -340,13 +341,15 @@ class FirmAgent(Agent):
         self.next_perceivedPeerAdoption = num_with_plan / total # At the moment this is just a latent variable to observe.    
 
     def update_perceived_feasibility(self):
-        self.next_feasible = (
-            self.next_beliefs["resources"] >= self.r_min_eff and
-            self.next_beliefs["knowledge"] >= self.k_min and
-            self.next_beliefs["organisationalReadiness"] >= self.or_min_eff and
-            self.next_beliefs["publicTransport"] >= self.pt_min and
-            self.next_beliefs["awareness"] == 1
-        ) # Feasible = True if all constraints  are above or = to the minimum thresholds, otherwise it is false
+        "This calculates how many of the constraints are met and returns them"
+        self.numberOfConstraintsMet = sum([
+            self.next_beliefs["resources"] >= self.r_min_eff,
+            self.next_beliefs["knowledge"] >= self.k_min,
+            self.next_beliefs["organisationalReadiness"] >= self.or_min_eff,
+            self.next_beliefs["publicTransport"] >= self.pt_min,
+        ])
+        return self.numberOfConstraintsMet
+        
 
     def update_prob_adoption(self):
         # size_mid = self.SIZE_MIDPOINT.get(self.size_cat) # Get the midpoint of the size bin
@@ -357,21 +360,35 @@ class FirmAgent(Agent):
         self.next_perceived_net_benefit = self.model.obj_net_benefit_min + (
             (self.model.obj_net_benefit_max - self.model.obj_net_benefit_min) * (
                 (self.next_beliefs["motivations"] - (self.next_beliefs["perceivedBarriers"])))) # estimated net benefit is equal to the minimum plausible net benefit plus a range of plausible net benefit values that depends on the perception of costs and benefits of adoption (which are scaled between 0 and 1). 
-        
-        if self.next_feasible:                                                            # If the WTP is perceived as feasible, then:
-            self.next_prob_adoption = 1 / (1 + math.exp(-0.03*(self.next_perceived_net_benefit-126)))          # The logit (sigmoidal) function converts the perceived net benefit into a probability of adoption for a range of NB from 126 to 250. Which is what we want when size does not influence
-        else:
-            self.next_prob_adoption = 0                                                   # If a WTP is not perceived as feasible, then the probability of adoption is 0
+                                                                 # If the WTP is perceived as feasible, then:
+        self.next_prob_adoption = 1 / (1 + math.exp(-0.03*(self.next_perceived_net_benefit-126)))          # The logit (sigmoidal) function converts the perceived net benefit into a probability of adoption for a range of NB from 126 to 250. Which is what we want when size does not influence
+                                                 # If a WTP is not perceived as feasible, then the probability of adoption is 0
 
     def probability_to_stage(self, p):
-        """Map adoption probability to a candidate stage. This is based on thresholds from an empirical survey"""
+        """Map adoption probability to a candidate stage."""
         if p < 0.14:
             return "A. No intention"
-        if p < 0.58:
-            return "B. May consider"
-        if p < 0.79:
-            return "C. Is developing a WTP"
-        return "D. Has a WTP"
+        elif p < 0.58:
+            if self.numberOfConstraintsMet >= 2:
+                return "B. May consider"
+            else:
+                return "A. No intention"
+        elif p < 0.79:
+            if self.numberOfConstraintsMet >= 3:
+                return "C. Is developing a WTP"
+            elif self.numberOfConstraintsMet >= 2:
+                return "B. May consider"
+            else:
+                return "A. No intention"
+        else:
+            if self.numberOfConstraintsMet >= 4:
+                return "D. Has a WTP"
+            elif self.numberOfConstraintsMet >= 3:
+                return "C. Is developing a WTP"
+            elif self.numberOfConstraintsMet >= 2:
+                return "B. May consider"
+            else:
+                return "A. No intention"
 
     def update_adoption_status(self):
         """Update adoption stage using candidate stage, progression rules, and time locks."""
@@ -406,12 +423,12 @@ class FirmAgent(Agent):
 
         # Must spend at least 2 ticks in C before moving to D
         if old_stage == "C. Is developing a WTP" and candidate_stage == "D. Has a WTP":
-            if self.time_in_stage < 2:
+            if self.time_in_stage < 1:
                 next_stage = "C. Is developing a WTP"
 
-        # Must spend at least 2 ticks in D before dropping out
+        # Must spend at least 5 ticks in D before dropping out
         if old_stage == "D. Has a WTP" and candidate_stage != "D. Has a WTP":
-            if self.time_in_stage < 2:
+            if self.time_in_stage < 3:
                 next_stage = "D. Has a WTP"
 
         self.next_adoption_stage = next_stage
@@ -423,13 +440,5 @@ class FirmAgent(Agent):
 
     def update_adoption_status_FIRSTTICKONLY(self):
         """On the first tick we're just updating adoption status based on their beliefs etc, so there should be no time lags."""
-        if self.next_prob_adoption < 0.14:
-            self.next_adoption_stage = "A. No intention"
-        elif self.next_prob_adoption < 0.58:
-            self.next_adoption_stage = "B. May consider"
-        elif self.next_prob_adoption < 0.79:
-            self.next_adoption_stage = "C. Is developing a WTP"
-        else:
-            self.next_adoption_stage = "D. Has a WTP"
-
+        self.next_adoption_stage = self.probability_to_stage(self.next_prob_adoption)
         self.next_time_in_stage = 0

@@ -13,7 +13,7 @@
 # This file should choose parameters, activate shocks, run the model and plot results.
 
 from Model import AdoptionModel # From the file Model.py, import the AdoptionModel class.
-from Agents import FirmAgent # From the file Agents.py, import the FirmAgent class.
+from Agent_Kof4FeasbilityRule import FirmAgent # From the file Agents.py, import the FirmAgent class.
 import numpy as np #Has multi-dimensional arrays and matrices. Has a large collection of mathematical functions to operate on these arrays.
 import pandas as pd # Data manipulation and analysis.
 import seaborn as sns # Data visualization tools.
@@ -36,11 +36,11 @@ T =  27 										# The program runs for 28 years because I have data from 1997 
 N =  500                                        # Set how many agents there are in the model. 
 
 #--- Setting the parameters for the batch runner ---
-params = {"learning_rate":  [0.02, 0.03, 0.04, 0.05],								# This is the rate at which firms learn from other firms
-          "competitor_inference_increment":  [0.025, 0.05, 0.075], # This is how much an agent's perceived benefits increases or decreases depening on their compeitors adoption stage. (at the moment = to learning rate* learning)
-          "realism_pull_constraints" :  [0.05, 0.10, 0.15],								# For time and money constraints set the realism pull as higher for these very objective concepts
-          "init_positive_shift" :[0.3, 0.35, 0.4],                                  # This is used for calibration of initial distributions of beliefs
-          "collect_agent_data": True, # False while doing such large sweeps
+params = {"learning_rate":  [0.4, 0.5, 0.6],								# This is the rate at which firms learn from other firms
+          "competitor_inference_increment":  [0.01, 0.03, 0.05], # This is how much an agent's perceived benefits increases or decreases depening on their compeitors adoption stage. (at the moment = to learning rate* learning)
+          "realism_pull_constraints" :  [0.5, 0.7, 0.9],								# For time and money constraints set the realism pull as higher for these very objective concepts
+          "init_positive_shift" :[0.05, 0.1, 0.15],                                  # This is used for calibration of initial distributions of beliefs
+          "collect_agent_data": False, # False while doing such large sweeps
           ## These are not changing, but I have to pass them in anyway
           "num_agents": N, # Set how many agents there are in the model. This needs to be <= the number of firms in the data file.
           "organisationalReadiness_min": 0.4367,										# This is the organisational readiness threshold, if exceeded they may be able to adopt

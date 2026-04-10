@@ -13,7 +13,7 @@
 # This file should choose parameters, activate shocks, run the model and plot results.
 
 from Model import AdoptionModel # From the file Model.py, import the AdoptionModel class.
-from Agents import FirmAgent # From the file Agents.py, import the FirmAgent class.
+from Agent_Kof4FeasbilityRule import FirmAgent # From the file Agents.py, import the FirmAgent class.
 import numpy as np #Has multi-dimensional arrays and matrices. Has a large collection of mathematical functions to operate on these arrays.
 import pandas as pd # Data manipulation and analysis.
 import seaborn as sns # Data visualization tools.
@@ -37,14 +37,14 @@ N =  500                                        # Set how many agents there are 
 
 model = AdoptionModel(
     num_agents= N, 
-    learning_rate = 1,									# This is the rate at which firms learn from other firms
-    competitor_inference_increment=0.025, # This is how much an agent's perceived benefits increases or decreases depening on their compeitors adoption stage.
-    realism_pull_constraints = 0.10,								# Higher number means that beliefs as less influenced.
-    init_positive_shift = 0.3,                                  # This is used for calibration of initial distributions of beliefs
+    learning_rate = 0.6,									# This is the rate at which firms learn from other firms
+    competitor_inference_increment=0.01, # This is how much an agent's perceived benefits increases or decreases depening on their compeitors adoption stage.
+    realism_pull_constraints = 0.80,								# Higher number means that beliefs as less influenced.
+    init_positive_shift = 0,                                  # This is used for calibration of initial distributions of beliefs
     collect_agent_data= True,
     organisationalReadiness_min= 0.4367,										# This is the organisational readiness threshold, if exceeded they may be able to adopt
     publicTransport_min= 0.5883,										# This is the public transport threshold, if exceeded they may be able to adopt
-    resource_min=.5683,										# This is resource threshold, if exceeded they may be able to adopt
+    resource_min= 0.5683,										# This is resource threshold, if exceeded they may be able to adopt
     knowledge_min= 0.4667,									# This is the knowledge threshold, if exceeded they may be able to adopt
     obj_net_benefit_min =	188,					# This is the lower threshold for the net benefits (£) an SME can expect per employee per year, according to the RAS project
     obj_net_benefit_max =	250,					# This is the upper threshold for the net benefits (£) an SME can expect per employee per year, according to the RAS project
@@ -73,7 +73,7 @@ def draw_frame(frame):
     model.step() # The animation advances the step, so th emodel is actively playing while the animation runs
   
     node_colors = [stage_colours[model.grid.get_cell_list_contents([n])[0].adoption_stage] for n in G.nodes()] # Iterating over every node, dispaly the colour based on adoption stage
-    node_sizes  = [max(50, model.grid.get_cell_list_contents([n])[0].prob_adoption*300) for n in G.nodes()] # Gives each node a size based on p(adopt)
+    node_sizes  = [max(50, model.grid.get_cell_list_contents([n])[0].prob_adoption*100) for n in G.nodes()] # Gives each node a size based on p(adopt)
     pos = nx.spring_layout(G, k=1.5, seed=42)
     nx.draw(
         G,

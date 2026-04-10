@@ -12,7 +12,7 @@ import itertools
 from mesa import Model, DataCollector
 from mesa.space import NetworkGrid # NetworkGrid is mesa's modern tools for discrete spatial and network structures
 import networkx as nx  # This is used to create and manipulate networks https://networkx.org/documentation/stable/reference/introduction.html
-from Agents import FirmAgent  # Import the FirmAgent class from the agent file
+from Agent_Kof4FeasbilityRule import FirmAgent  # Import the FirmAgent class from the agent file
 import numpy as np
 import pandas as pd
 
