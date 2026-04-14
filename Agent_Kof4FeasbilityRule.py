@@ -235,7 +235,7 @@ class FirmAgent(Agent):
         """Snapshot the agent's state at the start of the tick."""
         self.prev_beliefs = self.beliefs.copy()
         self.prev_adoption_stage = self.adoption_stage
-        self.prev_feasible = self.feasible
+        self.prev_numberOfConstraintsMet = self.numberOfConstraintsMet
         self.prev_prob_adoption = self.prob_adoption
         self.prev_perceived_net_benefit = self.perceived_net_benefit
         self.prev_time_in_stage = self.time_in_stage

@@ -89,7 +89,7 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
         self.obj_net_benefit_min = obj_net_benefit_min
         self.obj_net_benefit_max = obj_net_benefit_max
 
-        self.current_year = 1997
+        self.current_year = 1996
 
         # 1. Create agents first (they sample their own attributes inside FirmAgent which is my definintion of an agent)
         created_agents = [FirmAgent(self) for _ in range(self.num_agents)]
