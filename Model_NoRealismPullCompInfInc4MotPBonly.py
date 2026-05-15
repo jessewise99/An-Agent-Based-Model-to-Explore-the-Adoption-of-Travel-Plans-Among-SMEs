@@ -2,7 +2,7 @@
 #     Model - Model                        #
 #     Date: 2026-04-02                     #
 #     Author: Jesse Wise                   #
-#     Purpose: Implementing Pseudocode V2  #
+#     Purpose: Testing V12  #
 ############################################
 
 # Think of this file like the 'world' - what exists globally and what rules apply system wide?
@@ -13,7 +13,7 @@ from mesa import Model, DataCollector
 from mesa.space import NetworkGrid # NetworkGrid is mesa's modern tools for discrete spatial and network structures
 import networkx as nx  # This is used to create and manipulate networks https://networkx.org/documentation/stable/reference/introduction.html
 #from Agent_Kof4FeasbilityRule import FirmAgent  # Import the FirmAgent class from the agent file
-from Agents_NoPTAccessCompInfInc import FirmAgent  # Import the FirmAgent class from the agent file
+from Agents_NoRealismPullCompInfInc4MotPBonly import FirmAgent  # Import the FirmAgent class from the agent file
 import numpy as np
 import pandas as pd
 
@@ -51,8 +51,8 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
 
 
     def __init__(self, num_agents:int, learning_rate:float, competitor_inference_increment:float,
-                 realism_pull_constraints:float, organisationalReadiness_min:float,
-                 publicTransport_min:float, knowledge_min:float, resource_min:float,
+                 organisationalReadiness_min:float, publicTransport_min:float, 
+                 knowledge_min:float, resource_min:float,
                  obj_net_benefit_min:int, obj_net_benefit_max:int, 
                  init_positive_shift: float,
                  collect_agent_data:bool, 
@@ -74,8 +74,6 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
         # Set learning parameters
         self.competitor_inference_increment = competitor_inference_increment
         self.learning_rate = learning_rate
-        self.realism_pull_sociallyInfluencedVars =    0.5 * realism_pull_constraints						# For benefits, costs, and knowledge, the realism pull is lower as these are more subjective likely to be swayed by social influence
-        self.realism_pull_constraints = realism_pull_constraints
         
         # Set thresholds and bounds
         self.organisationalReadiness_min = organisationalReadiness_min

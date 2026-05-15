@@ -12,8 +12,11 @@
 # This file is used to run the model. To do so, you must import the model and agents from their respective files.
 # This file should choose parameters, activate shocks, run the model and plot results.
 
-from Model import AdoptionModel # From the file Model.py, import the AdoptionModel class.
-from Agent_Kof4FeasbilityRule import FirmAgent # From the file Agents.py, import the FirmAgent class.
+#from Model import AdoptionModel # From the file Model.py, import the AdoptionModel class.
+from Model_NoRealismPullCompInfInc4MotPBonly import AdoptionModel # From the file Model.py, import the AdoptionModel class.
+#from Agent_Kof4FeasbilityRule import FirmAgent # From the file Agents.py, import the FirmAgent class.
+#from Agents_NoPTAccessCompInfInc import FirmAgent # From the file Agents.py, import the FirmAgent class.
+from Agents_NoRealismPullCompInfInc4MotPBonly import FirmAgent # From the file Agents.py, import the FirmAgent class.
 import numpy as np #Has multi-dimensional arrays and matrices. Has a large collection of mathematical functions to operate on these arrays.
 import pandas as pd # Data manipulation and analysis.
 import seaborn as sns # Data visualization tools.
@@ -32,14 +35,13 @@ from collections import Counter
 # You need to run data collection and the batch runner too see here https://mesa.readthedocs.io/latest/overview.html
 # These parameters will need to be tuned and calibrated: learning_rate, realism_pull_constraints, realism_pull_sociallyInfluencedVars, competitor_inference_increment
 
-T =  29 										# The program runs for 28 years because I have data from 1997 to 2025.
+T =  30 										# The program runs for 28 years because I have data from 1997 to 2025.
 N =  500                                        # Set how many agents there are in the model. 
 
 #--- Setting the parameters for the batch runner ---
-params = {"learning_rate":  [0.4, 0.5, 0.6],								# This is the rate at which firms learn from other firms
-          "competitor_inference_increment":  [0.01, 0.03, 0.05], # This is how much an agent's perceived benefits increases or decreases depening on their compeitors adoption stage. (at the moment = to learning rate* learning)
-          "realism_pull_constraints" :  [0.5, 0.7, 0.9],								# For time and money constraints set the realism pull as higher for these very objective concepts
-          "init_positive_shift" :[0, 0.01],                                  # This is used for calibration of initial distributions of beliefs
+params = {"learning_rate":  [0.05, 0.1, 0.15, 0.2],								# This is the rate at which firms learn from other firms
+          "competitor_inference_increment":  [0.01, 0.015], # This is how much an agent's perceived benefits increases or decreases depening on their compeitors adoption stage. (at the moment = to learning rate* learning)
+          "init_positive_shift" :[0.25],                                  # This is used for calibration of initial distributions of beliefs
           "collect_agent_data": False, # False while doing such large sweeps
           ## These are not changing, but I have to pass them in anyway
           "num_agents": N, # Set how many agents there are in the model. This needs to be <= the number of firms in the data file.

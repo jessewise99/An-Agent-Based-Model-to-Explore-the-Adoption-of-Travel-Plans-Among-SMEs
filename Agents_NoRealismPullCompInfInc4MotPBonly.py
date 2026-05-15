@@ -2,7 +2,7 @@
 #     Model - Agents                       #
 #     Date: 2026-04-02                     #
 #     Author: Jesse Wise                   #
-#     Purpose: Implementing Pseudocode V2  #
+#     Purpose: Testing V12     #
 ############################################
 
 # This agent file uses a k out of 4 decision making rule
@@ -286,37 +286,34 @@ class FirmAgent(Agent):
             # Continuous beliefs (0 -> 1)
             social_mean = sum(peer_values) / len(peer_values) # take an average of peer values
             personal = self.prev_beliefs[b] # agent's current belief
-            baseline = self.beliefs_initial[b] # agent's initial belief
-
-            realism_pull = (
-                self.model.realism_pull_sociallyInfluencedVars if self.belief_types[b] == "subjective"
-                else self.model.realism_pull_constraints
-            ) # Use the correct realism pull based on belief type i.e., it is stronger for constraints (objective) than for subjective beliefs
 
             self.next_beliefs[b] = np.clip(( personal # New belief = old belief + 
-               + self.learning_rate_eff * (social_mean - personal) # (learning rate × peer signal gap) nudges beliefs towards the social average +
-               + realism_pull * (baseline - personal) # (realism pull × gap from original belief)  pulls beliefs back toward where they started
-            ), 0.0, 1.0)
+               + self.learning_rate_eff * (social_mean - personal) # (learning rate × peer signal gap) nudges beliefs towards the social average 
+               ), 0.0, 1.0)
 
-    def update_knowledge_partially(self): # If a weak tie has a plan, then they infer this as a signal that WTPs are a net benefit
-        non_adopted = {"A. No intention", "B. May consider"}
+    def update_knowledge_partially(self): 
+        """Per weak tie, while a weak tie has (or is developing) a plan, then they infer this as a signal that WTPs are a net benefit. Motivations increase and perceived barriers decrease.""" 
         adopted = {"C. Is developing a WTP","D. Has a WTP"}
 
-        for competitor_stage_prev in self.competitor_adoptions:
+        for competitor_stage_prev in self.competitor_adoptions: # Stacks competitor effects, but ONLY for the previous timestep i.e. a while loop, not if they have ever adopted in the past
             if competitor_stage_prev in adopted:
-                self.next_beliefs["knowledge"] = np.clip(
-                    self.next_beliefs["knowledge"] + self.competitor_inference_increment_eff, 0.0, 1.0)
-                self.next_beliefs["organisationalReadiness"] = np.clip(
-                    self.next_beliefs["organisationalReadiness"] + self.competitor_inference_increment_eff, 0.0, 1.0)
-                self.next_beliefs["resources"] = np.clip(
-                    self.next_beliefs["resources"] + self.competitor_inference_increment_eff, 0.0, 1.0)
-                self.next_beliefs["publicTransport"] = np.clip(
-                    self.next_beliefs["publicTransport"] + self.competitor_inference_increment_eff, 0.0, 1.0)
                 self.next_beliefs["motivations"] = np.clip(
                     self.next_beliefs["motivations"] + self.competitor_inference_increment_eff, 0.0, 1.0)
                 self.next_beliefs["perceivedBarriers"] = np.clip(
                     self.next_beliefs["perceivedBarriers"] - self.competitor_inference_increment_eff, 0.0, 1.0)
                 self.next_beliefs["awareness"] = 1
+
+                if self.prev_adoption_stage in {"B. May consider", "C. Is developing a WTP", "D. Has a WTP"}: #If a firm has at least reached the “may consider” stage, then competitor adoption motivates them to increase feasibility.
+                    self.next_beliefs["knowledge"] = np.clip(
+                        self.next_beliefs["knowledge"] + self.competitor_inference_increment_eff, 0.0, 1.0
+                    )
+                    self.next_beliefs["organisationalReadiness"] = np.clip(
+                        self.next_beliefs["organisationalReadiness"] + self.competitor_inference_increment_eff, 0.0, 1.0
+                    )
+                    self.next_beliefs["resources"] = np.clip(
+                        self.next_beliefs["resources"] + self.competitor_inference_increment_eff, 0.0, 1.0
+                    )
+
     
     def update_perceived_peer_adoption(self):
         # Combine peer and competitor ids
@@ -423,10 +420,10 @@ class FirmAgent(Agent):
 
         # Must spend at least 2 ticks in C before moving to D
         if old_stage == "C. Is developing a WTP" and candidate_stage == "D. Has a WTP":
-            if self.time_in_stage < 1:
+            if self.time_in_stage < 2:
                 next_stage = "C. Is developing a WTP"
 
-        # Must spend at least 5 ticks in D before dropping out
+        # Must spend at least 3 ticks in D before dropping out
         if old_stage == "D. Has a WTP" and candidate_stage != "D. Has a WTP":
             if self.time_in_stage < 3:
                 next_stage = "D. Has a WTP"
