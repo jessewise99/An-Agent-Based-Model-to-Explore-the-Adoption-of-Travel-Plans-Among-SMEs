@@ -74,7 +74,9 @@ def record_step(model):
 # ─────────────────────────────────────────────
 def make_model(n_agents, learning_rate,
                or_min, pt_min, r_min, k_min,
-               obj_min, obj_max, comp_inc):
+               obj_min, obj_max, comp_inc,
+               init_positive_shift,
+               collect_agent_data):
     return AdoptionModel(
         num_agents=n_agents,
         learning_rate=learning_rate,
@@ -88,6 +90,8 @@ def make_model(n_agents, learning_rate,
         active_shocks=None,
         shock_parameters=None,
         debug=False,
+        init_positive_shift=init_positive_shift,
+        collect_agent_data=collect_agent_data,
     )
 
 
@@ -366,11 +370,14 @@ def Page():
     obj_max,       set_obj_max       = solara.use_state(250.0)
     comp_inc,      set_comp_inc      = solara.use_state(0.10)
     init_done,     set_init_done     = solara.use_state(False)
+    init_positive_shift, set_init_positive_shift = solara.use_state(0.0)
+    collect_agent_data, set_collect_agent_data = solara.use_state(True)
 
     def initialise():
         m = make_model(n_agents, learning_rate,
                        or_min, pt_min, r_min, k_min,
-                       obj_min, obj_max, comp_inc)
+                       obj_min, obj_max, comp_inc,
+                       init_positive_shift, collect_agent_data)
         record_step(m)   # capture step-0 state
         model_ref.set(m)
         step_count.set(0)
@@ -438,11 +445,18 @@ def Page():
 
                 solara.InputInt("Agents", value=n_agents, on_value=set_n_agents)
                 slider_row("Social learning rate (%)", learning_rate, set_learning_rate, 0.0, 1.0, 0.01)
-                slider_row("Learning from observation", comp_inc, set_comp_inc, 0.0, 0.2, 0.01)
+                slider_row("Mimetic Isomorphism", comp_inc, set_comp_inc, 0.0, 0.2, 0.01)
                 slider_row("Organisational readiness min", or_min, set_or_min, 0.0, 1.0, 0.01)
                 slider_row("Public transport access min", pt_min, set_pt_min, 0.0, 1.0, 0.01)
                 slider_row("Resource min", r_min, set_r_min, 0.0, 1.0, 0.01)
                 slider_row("Knowledge min", k_min, set_k_min, 0.0, 1.0, 0.01)
+                slider_row("Shift initial COM-b values", init_positive_shift, set_init_positive_shift, 0.0, 1.0, 0.01)
+
+                solara.Checkbox(
+                    label="Collect agent data",
+                    value=collect_agent_data,
+                    on_value=set_collect_agent_data,
+                )
 
                 with solara.Row(style="align-items:center; gap:8px; width:100%;"):
                     solara.Button("Initialise", on_click=initialise,
