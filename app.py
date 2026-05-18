@@ -62,10 +62,12 @@ def record_step(model):
     total   = len(agents)
     aware   = sum(1 for a in agents if a.beliefs["awareness"] == 1)
     nbs     = [a.perceived_net_benefit for a in agents if a.perceived_net_benefit is not None]
+    probs   = [a.prob_adoption for a in agents]
     history.append({
         "step":      len(history),
         "awareness": aware / total if total else 0.0,
         "avg_nb":    sum(nbs) / len(nbs) if nbs else 0.0,
+        "avg_prob":  sum(probs) / len(probs) if probs else 0.0,
     })
 
 
@@ -74,9 +76,7 @@ def record_step(model):
 # ─────────────────────────────────────────────
 def make_model(n_agents, learning_rate,
                or_min, pt_min, r_min, k_min,
-               obj_min, obj_max, comp_inc,
-               init_positive_shift,
-               collect_agent_data):
+               obj_min, obj_max, comp_inc):
     return AdoptionModel(
         num_agents=n_agents,
         learning_rate=learning_rate,
@@ -90,8 +90,8 @@ def make_model(n_agents, learning_rate,
         active_shocks=None,
         shock_parameters=None,
         debug=False,
-        init_positive_shift=init_positive_shift,
-        collect_agent_data=collect_agent_data,
+        init_positive_shift=0.0,
+        collect_agent_data=True,
     )
 
 
@@ -159,9 +159,9 @@ def build_network_figure(model):
                 f"Net benefit: {nb_str}<br>"
                 f"Sector: {a.sector}<br>"
                 f"Region: {a.postcode}<br>"
-                #f"Size: {a.size_cat}<br>"
+                f"Size: {a.size_cat}<br>"
                 f"Network: {a.network}<br>"
-                f"Feasible: {a.feasible}"
+                f"Constraints met: {a.numberOfConstraintsMet}/4"
             )
         sizes = [agents_by_id[nid].prob_adoption * 18 + 6 for nid in sd["ids"]]
         traces.append(go.Scatter(
@@ -203,6 +203,10 @@ def build_adoption_chart(model):
     if df.empty:
         return go.Figure()
     fig = go.Figure()
+    if "Num_Considering" in df.columns:
+        fig.add_trace(go.Scatter(x=df["index"], y=df["Num_Considering"],
+            mode="lines+markers", line=dict(color="#f4a261", width=2),
+            marker=dict(size=4), name="May consider"))
     fig.add_trace(go.Scatter(x=df["index"], y=df["Num_Developers"],
         mode="lines+markers", line=dict(color="#e9c46a", width=2),
         marker=dict(size=4), name="Developing WTP"))
@@ -217,19 +221,22 @@ def build_adoption_chart(model):
 
 
 def build_prob_chart(model):
-    agent_df = model.datacollector.get_agent_vars_dataframe()
-    if agent_df.empty:
-        return go.Figure()
-    avg = agent_df.groupby("Step")["Adoption Probability"].mean().reset_index()
-    fig = go.Figure(go.Scatter(
-        x=avg["Step"], y=avg["Adoption Probability"],
-        mode="lines+markers", line=dict(color="#a78bfa", width=2),
-        marker=dict(size=4), fill="tozeroy",
-        fillcolor="rgba(167,139,250,0.12)", name="Avg P(adopt)"))
-    fig.update_layout(**_CHART_LAYOUT,
-        xaxis=dict(title="Step", gridcolor="#1e2130"),
-        yaxis=dict(title="Avg P(adopt)", gridcolor="#1e2130", range=[0, 1]))
-    return fig
+    # Prefer the lightweight history because the app can optionally switch
+    # off full agent-level DataCollector output.
+    history = _get_history(model)
+    if history:
+        fig = go.Figure(go.Scatter(
+            x=[h["step"] for h in history],
+            y=[h["avg_prob"] for h in history],
+            mode="lines+markers", line=dict(color="#a78bfa", width=2),
+            marker=dict(size=4), fill="tozeroy",
+            fillcolor="rgba(167,139,250,0.12)", name="Avg P(adopt)"))
+        fig.update_layout(**_CHART_LAYOUT,
+            xaxis=dict(title="Step", gridcolor="#1e2130"),
+            yaxis=dict(title="Avg P(adopt)", gridcolor="#1e2130", range=[0, 1]))
+        return fig
+
+    return go.Figure()
 
 
 def build_nb_chart(model):
@@ -317,9 +324,9 @@ def AgentInspector(step: int):
         solara.Text(f"Agent ID: {a.unique_id}",       style="font-size:12px; color:#9ca3af;")
         solara.Text(f"Sector: {a.sector}",             style="font-size:12px; color:#d4d4d8;")
         solara.Text(f"Region: {a.postcode}",           style="font-size:12px; color:#d4d4d8;")
-        #solara.Text(f"Size: {a.size_cat} ({a.size})",  style="font-size:12px; color:#d4d4d8;")
+        solara.Text(f"Size: {a.size_cat} ({a.size})",  style="font-size:12px; color:#d4d4d8;")
         solara.Text(f"Network: {a.network}",           style="font-size:12px; color:#d4d4d8;")
-        solara.Text(f"Feasible: {a.feasible}",         style="font-size:12px; color:#d4d4d8;")
+        solara.Text(f"Constraints met: {a.numberOfConstraintsMet}/4", style="font-size:12px; color:#d4d4d8;")
         solara.Text(f"P(adopt): {a.prob_adoption:.4f}",style="font-size:12px; color:#a78bfa;")
         solara.Text(f"Net benefit: {nb_str}",          style="font-size:12px; color:#a78bfa;")
 
@@ -370,14 +377,11 @@ def Page():
     obj_max,       set_obj_max       = solara.use_state(250.0)
     comp_inc,      set_comp_inc      = solara.use_state(0.10)
     init_done,     set_init_done     = solara.use_state(False)
-    init_positive_shift, set_init_positive_shift = solara.use_state(0.0)
-    collect_agent_data, set_collect_agent_data = solara.use_state(True)
 
     def initialise():
         m = make_model(n_agents, learning_rate,
                        or_min, pt_min, r_min, k_min,
-                       obj_min, obj_max, comp_inc,
-                       init_positive_shift, collect_agent_data)
+                       obj_min, obj_max, comp_inc)
         record_step(m)   # capture step-0 state
         model_ref.set(m)
         step_count.set(0)
@@ -430,7 +434,7 @@ def Page():
           <span style='font-size:18px;font-weight:700;color:#f4f4f5;
                        letter-spacing:0.04em'>WTP ADOPTION MODEL</span>
           <span style='font-size:11px;color:#4b5563;letter-spacing:0.08em'>
-            Agent Based Model of Workplace Travel Plans · Made useing MESA · Each step represents 1 year, running for up to 28 years
+            Agent Based Model of Workplace Travel Plans · Made using Mesa · Each step represents 1 year, running for up to 28 years
           </span>
         </div>""")
 
@@ -445,18 +449,11 @@ def Page():
 
                 solara.InputInt("Agents", value=n_agents, on_value=set_n_agents)
                 slider_row("Social learning rate (%)", learning_rate, set_learning_rate, 0.0, 1.0, 0.01)
-                slider_row("Mimetic Isomorphism", comp_inc, set_comp_inc, 0.0, 0.2, 0.01)
+                slider_row("Learning from observation", comp_inc, set_comp_inc, 0.0, 0.2, 0.01)
                 slider_row("Organisational readiness min", or_min, set_or_min, 0.0, 1.0, 0.01)
                 slider_row("Public transport access min", pt_min, set_pt_min, 0.0, 1.0, 0.01)
                 slider_row("Resource min", r_min, set_r_min, 0.0, 1.0, 0.01)
                 slider_row("Knowledge min", k_min, set_k_min, 0.0, 1.0, 0.01)
-                slider_row("Shift initial COM-b values", init_positive_shift, set_init_positive_shift, 0.0, 1.0, 0.01)
-
-                solara.Checkbox(
-                    label="Collect agent data",
-                    value=collect_agent_data,
-                    on_value=set_collect_agent_data,
-                )
 
                 with solara.Row(style="align-items:center; gap:8px; width:100%;"):
                     solara.Button("Initialise", on_click=initialise,
