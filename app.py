@@ -17,7 +17,7 @@ import solara.lab
 import networkx as nx
 import plotly.graph_objects as go
 from collections import Counter
-from Model import AdoptionModel
+from Model_NoRealismPullCompInfInc4MotPBonly import AdoptionModel
 
 #raise Exception("TEST ERROR")
 # ─────────────────────────────────────────────
@@ -72,13 +72,12 @@ def record_step(model):
 # ─────────────────────────────────────────────
 #  Model factory
 # ─────────────────────────────────────────────
-def make_model(n_agents, learning_rate, r_con,
+def make_model(n_agents, learning_rate,
                or_min, pt_min, r_min, k_min,
                obj_min, obj_max, comp_inc):
     return AdoptionModel(
         num_agents=n_agents,
         learning_rate=learning_rate,
-        realism_pull_constraints=r_con,
         obj_net_benefit_min=obj_min,
         obj_net_benefit_max=obj_max,
         organisationalReadiness_min=or_min,
@@ -359,7 +358,6 @@ def slider_row(label, value, set_value, min_val, max_val, step_size):
 def Page():
     n_agents,      set_n_agents      = solara.use_state(500)
     learning_rate, set_learning_rate = solara.use_state(0.5)
-    r_con,         set_r_con         = solara.use_state(0.02)
     or_min,        set_or_min        = solara.use_state(0.4367)
     pt_min,        set_pt_min        = solara.use_state(0.5883)
     r_min,         set_r_min         = solara.use_state(0.5683)
@@ -370,7 +368,7 @@ def Page():
     init_done,     set_init_done     = solara.use_state(False)
 
     def initialise():
-        m = make_model(n_agents, learning_rate, r_con,
+        m = make_model(n_agents, learning_rate,
                        or_min, pt_min, r_min, k_min,
                        obj_min, obj_max, comp_inc)
         record_step(m)   # capture step-0 state
@@ -441,7 +439,6 @@ def Page():
                 solara.InputInt("Agents", value=n_agents, on_value=set_n_agents)
                 slider_row("Social learning rate (%)", learning_rate, set_learning_rate, 0.0, 1.0, 0.01)
                 slider_row("Learning from observation", comp_inc, set_comp_inc, 0.0, 0.2, 0.01)
-                slider_row("Realism pull", r_con, set_r_con, 0.0, 0.1, 0.01)
                 slider_row("Organisational readiness min", or_min, set_or_min, 0.0, 1.0, 0.01)
                 slider_row("Public transport access min", pt_min, set_pt_min, 0.0, 1.0, 0.01)
                 slider_row("Resource min", r_min, set_r_min, 0.0, 1.0, 0.01)
