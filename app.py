@@ -159,7 +159,7 @@ def build_network_figure(model):
                 f"Net benefit: {nb_str}<br>"
                 f"Sector: {a.sector}<br>"
                 f"Region: {a.postcode}<br>"
-                f"Size: {a.size_cat}<br>"
+                #f"Size: {a.size_cat}<br>"
                 f"Network: {a.network}<br>"
                 f"Feasible: {a.feasible}"
             )
@@ -317,7 +317,7 @@ def AgentInspector(step: int):
         solara.Text(f"Agent ID: {a.unique_id}",       style="font-size:12px; color:#9ca3af;")
         solara.Text(f"Sector: {a.sector}",             style="font-size:12px; color:#d4d4d8;")
         solara.Text(f"Region: {a.postcode}",           style="font-size:12px; color:#d4d4d8;")
-        solara.Text(f"Size: {a.size_cat} ({a.size})",  style="font-size:12px; color:#d4d4d8;")
+        #solara.Text(f"Size: {a.size_cat} ({a.size})",  style="font-size:12px; color:#d4d4d8;")
         solara.Text(f"Network: {a.network}",           style="font-size:12px; color:#d4d4d8;")
         solara.Text(f"Feasible: {a.feasible}",         style="font-size:12px; color:#d4d4d8;")
         solara.Text(f"P(adopt): {a.prob_adoption:.4f}",style="font-size:12px; color:#a78bfa;")
