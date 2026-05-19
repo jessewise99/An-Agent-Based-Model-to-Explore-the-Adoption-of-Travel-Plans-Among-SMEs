@@ -12,8 +12,8 @@
 # This file is used to run and visualise the model. To do so, you must import the model and agents from their respective files.
 # This file should choose parameters, activate shocks, run the model and plot results.
 
-from Model import AdoptionModel # From the file Model.py, import the AdoptionModel class.
-from Agent_Kof4FeasbilityRule import FirmAgent # From the file Agents.py, import the FirmAgent class.
+from Model_NoRealismPullCompInfInc4MotPBonly import AdoptionModel # From the file Model.py, import the AdoptionModel class.
+from Agents_NoRealismPullCompInfInc4MotPBonly import FirmAgent # From the file Agents.py, import the FirmAgent class.
 import numpy as np #Has multi-dimensional arrays and matrices. Has a large collection of mathematical functions to operate on these arrays.
 import pandas as pd # Data manipulation and analysis.
 import seaborn as sns # Data visualization tools.
@@ -32,15 +32,14 @@ from collections import Counter
 
 # These parameters will need to be tuned and calibrated: learning_rate, realism_pull_constraints, realism_pull_sociallyInfluencedVars, competitor_inference_increment
 
-T =  27 										# The model runs for 28 years because I have data from 1997 to 2025. in Step 0 they don't learn from each other
+T =  30 										# The model runs for 30 years because I have data from 1997 to 2025. 
 N =  500                                        # Set how many agents there are in the model. 
 
 model = AdoptionModel(
     num_agents= N, 
-    learning_rate = 0.6,									# This is the rate at which firms learn from other firms
+    learning_rate = 0.1,									# This is the rate at which firms learn from other firms
     competitor_inference_increment=0.015, # This is how much an agent's perceived benefits increases or decreases depening on their compeitors adoption stage.
-    realism_pull_constraints = 0.80,								# Higher number means that beliefs as less influenced.
-    init_positive_shift = 0,                                  # This is used for calibration of initial distributions of beliefs
+    init_positive_shift = 0.25,                                  # This is used for calibration of initial distributions of beliefs
     collect_agent_data= True,
     organisationalReadiness_min= 0.4367,										# This is the organisational readiness threshold, if exceeded they may be able to adopt
     publicTransport_min= 0.5883,										# This is the public transport threshold, if exceeded they may be able to adopt
@@ -171,6 +170,21 @@ if len(row) == 1:
     )
 else:
     print("Issue: expected 1 row for 2000, got", len(row))
+
+
+row = model_data.loc[model_data["Year"] == 2025]
+
+if len(row) == 1:
+    row = row.iloc[0]
+    print(
+        "In the year 2025, expected (0.2075, 0.3475, 0.0975, 0.3475). You got:",
+        row["Prop_NoIntention"],
+        row["Prop_Considering"],
+        row["Prop_Developers"],
+        row["Prop_Adopters"]
+    )
+else:
+    print("Issue: expected 1 row for 2025, got", len(row))
 
 # Plot Adoption over time
 plt.figure(figsize=(16, 10))

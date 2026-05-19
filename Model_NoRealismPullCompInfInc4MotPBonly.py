@@ -2,7 +2,7 @@
 #     Model - Model                        #
 #     Date: 2026-04-02                     #
 #     Author: Jesse Wise                   #
-#     Purpose: Testing V12  #
+#     Purpose: Testing V13  #
 ############################################
 
 # Think of this file like the 'world' - what exists globally and what rules apply system wide?
@@ -12,8 +12,7 @@ import itertools
 from mesa import Model, DataCollector
 from mesa.space import NetworkGrid # NetworkGrid is mesa's modern tools for discrete spatial and network structures
 import networkx as nx  # This is used to create and manipulate networks https://networkx.org/documentation/stable/reference/introduction.html
-#from Agent_Kof4FeasbilityRule import FirmAgent  # Import the FirmAgent class from the agent file
-from Agents_NoRealismPullCompInfInc4MotPBonly import FirmAgent  # Import the FirmAgent class from the agent file
+from Agents_Optimising import FirmAgent  # Import the FirmAgent class from the agent file
 import numpy as np
 import pandas as pd
 
@@ -55,9 +54,17 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
                  knowledge_min:float, resource_min:float,
                  obj_net_benefit_min:int, obj_net_benefit_max:int, 
                  init_positive_shift: float,
-                 collect_agent_data:bool, 
+                 collect_agent_data:bool,
+                 B_min_time:int, C_min_time:int, D_min_time:int, D_constraints:int, cap_first_tick_at:str, 
                  shock_parameters=None,seed=None, active_shocks=None, debug=True): #_init_ means the model is being intialised
         super().__init__(seed=seed)  # This *initialises* the parent Model class and sets the random seed
+        
+        # Use this for calibration
+        self.B_min_time = B_min_time
+        self.C_min_time = C_min_time
+        self.D_min_time = D_min_time
+        self.D_constraints = D_constraints
+        self.cap_first_tick_at = cap_first_tick_at
 
         self.num_agents = int(num_agents) # Makes sure its an integer
         self.running = True

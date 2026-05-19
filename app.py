@@ -489,7 +489,7 @@ def Page():
                 if not init_done:
                     solara.HTML("div", unsafe_innerHTML="""
                     <div style='display:flex;align-items:center;justify-content:center;
-                                height:400px;color:#4b5563;font-size:13px;
+                                height:800px;color:#4b5563;font-size:13px;
                                 border:1px dashed #1e2130;border-radius:8px;'>
                       Set parameters and click
                       <strong style='color:#818cf8;margin:0 4px'>Initialise</strong>

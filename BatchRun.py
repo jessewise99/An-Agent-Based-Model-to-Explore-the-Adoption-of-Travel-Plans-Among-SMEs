@@ -14,9 +14,7 @@
 
 #from Model import AdoptionModel # From the file Model.py, import the AdoptionModel class.
 from Model_NoRealismPullCompInfInc4MotPBonly import AdoptionModel # From the file Model.py, import the AdoptionModel class.
-#from Agent_Kof4FeasbilityRule import FirmAgent # From the file Agents.py, import the FirmAgent class.
-#from Agents_NoPTAccessCompInfInc import FirmAgent # From the file Agents.py, import the FirmAgent class.
-from Agents_NoRealismPullCompInfInc4MotPBonly import FirmAgent # From the file Agents.py, import the FirmAgent class.
+from Agents_Optimising import FirmAgent # From the file Agents.py, import the FirmAgent class.
 import numpy as np #Has multi-dimensional arrays and matrices. Has a large collection of mathematical functions to operate on these arrays.
 import pandas as pd # Data manipulation and analysis.
 import seaborn as sns # Data visualization tools.
@@ -39,15 +37,20 @@ T =  30 										# The program runs for 28 years because I have data from 1997 
 N =  500                                        # Set how many agents there are in the model. 
 
 #--- Setting the parameters for the batch runner ---
-params = {"learning_rate":  [0.05, 0.1, 0.15, 0.2],								# This is the rate at which firms learn from other firms
-          "competitor_inference_increment":  [0.01, 0.015], # This is how much an agent's perceived benefits increases or decreases depening on their compeitors adoption stage. (at the moment = to learning rate* learning)
-          "init_positive_shift" :[0.25],                                  # This is used for calibration of initial distributions of beliefs
+params = {"learning_rate":  [0.2, 0.3, 0.4],								# This is the rate at which firms learn from other firms
+          "competitor_inference_increment":  [0.02, 0.03, 0.04], # This is how much an agent's perceived benefits increases or decreases depening on their compeitors adoption stage. (at the moment = to learning rate* learning)
+          "init_positive_shift" :0,                                  # This is used for calibration of initial distributions of beliefs
+          "B_min_time": [1, 2],
+          "C_min_time": [1, 2],
+          "D_min_time": [2, 3, 4],
+          "D_constraints": [3, 4],
+          "cap_first_tick_at": ["C. Is developing a WTP", "D. Has a WTP"],
           "collect_agent_data": False, # False while doing such large sweeps
           ## These are not changing, but I have to pass them in anyway
           "num_agents": N, # Set how many agents there are in the model. This needs to be <= the number of firms in the data file.
           "organisationalReadiness_min": 0.4367,										# This is the organisational readiness threshold, if exceeded they may be able to adopt
           "publicTransport_min": 0.5883,										# This is the public transport threshold, if exceeded they may be able to adopt
-          "resource_min" :.5683,										# This is resource threshold, if exceeded they may be able to adopt
+          "resource_min" :0.5683,										# This is resource threshold, if exceeded they may be able to adopt
           "knowledge_min": 0.4667,									# This is the knowledge threshold, if exceeded they may be able to adopt
           "obj_net_benefit_min":	188,					# This is the lower threshold for the net benefits (£) an SME can expect per employee per year, according to the RAS project
           "obj_net_benefit_max" :	250,					# This is the upper threshold for the net benefits (£) an SME can expect per employee per year, according to the RAS project

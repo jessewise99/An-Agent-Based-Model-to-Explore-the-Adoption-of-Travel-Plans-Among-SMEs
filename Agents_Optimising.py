@@ -2,7 +2,7 @@
 #     Model - Agents                       #
 #     Date: 2026-04-02                     #
 #     Author: Jesse Wise                   #
-#     Purpose: Testing V12     #
+#     Purpose: Testing V13                  #
 ############################################
 
 # This agent file uses a k out of 4 decision making rule
@@ -373,7 +373,7 @@ class FirmAgent(Agent):
             else:
                 return "A. No intention"
         else:
-            if self.next_numberOfConstraintsMet >= 3:
+            if self.next_numberOfConstraintsMet >= self.model.D_constraints:
                 return "D. Has a WTP"
             elif self.next_numberOfConstraintsMet >= 3:
                 return "C. Is developing a WTP"
@@ -410,17 +410,17 @@ class FirmAgent(Agent):
 
         # Must spend at least 2 ticks in B before moving to C
         if old_stage == "B. May consider" and candidate_stage in {"C. Is developing a WTP", "D. Has a WTP"}:
-            if self.time_in_stage < 2:
+            if self.time_in_stage < self.model.B_min_time:
                 next_stage = "B. May consider"
 
         # Must spend at least 2 ticks in C before moving to D
         if old_stage == "C. Is developing a WTP" and candidate_stage == "D. Has a WTP":
-            if self.time_in_stage < 3:
+            if self.time_in_stage < self.model.C_min_time:
                 next_stage = "C. Is developing a WTP"
 
         # Must spend at least 4 ticks in D before dropping out
         if old_stage == "D. Has a WTP" and candidate_stage != "D. Has a WTP":
-            if self.time_in_stage < 4:
+            if self.time_in_stage < self.model.D_min_time:
                 next_stage = "D. Has a WTP"
 
         self.next_adoption_stage = next_stage
@@ -434,8 +434,14 @@ class FirmAgent(Agent):
         """On the first tick we're just updating adoption status based on their beliefs etc, so there should be no time lags."""
         candidate_stage = self.probability_to_stage(self.next_prob_adoption)
         # I'm having a problem getting the spread right at the beggining so this is my attempt to spread it out
-        if candidate_stage == "D. Has a WTP":
-            self.next_adoption_stage = "C. Is developing a WTP"
-        else:
-            self.next_adoption_stage = candidate_stage
+        if self.model.cap_first_tick_at== "D. Has a WTP":
+            if candidate_stage == "D. Has a WTP" :
+                self.next_adoption_stage = "C. Is developing a WTP"
+            else:
+                self.next_adoption_stage = candidate_stage
+        elif self.model.cap_first_tick_at== "C. Is developing a WTP":
+            if candidate_stage in {"C. Is developing a WTP", "D. Has a WTP"} :
+                self.next_adoption_stage = "B. May consider"
+            else:
+                self.next_adoption_stage = candidate_stage
         self.next_time_in_stage = 0
