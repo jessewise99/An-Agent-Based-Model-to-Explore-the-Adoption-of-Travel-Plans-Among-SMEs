@@ -2,7 +2,7 @@
 #     Model - Model                        #
 #     Date: 2026-04-02                     #
 #     Author: Jesse Wise                   #
-#     Purpose: Testing V13  #
+#     Purpose: Testing V13                 #
 ############################################
 
 # Think of this file like the 'world' - what exists globally and what rules apply system wide?
@@ -21,8 +21,8 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
     """Continuing to build on my toy model. 
 
     All agents have some capability, opportunity, and motivation to adopt a workplace travel plan - defined by 6 subdomains + awareness.
-    At each time step they learn from their peers, and update their own beliefs, including feasibility (resources, knowledge, access to PT, and organisational readiness) and their motivation (=costs-benefits).
-    They learn different from strong ties (peers) and weak ties (competitors). I just assume that those in a network have strong ties, while you have weak ties with your neighbours.
+    At each time step they learn from their peers, and update their own beliefs, including feasibility (resources, knowledge, access to PT, and organisational readiness) and their motivation (motivators & perceived barriers).
+    They learn differently from strong ties (peers) and weak ties (competitors). In this model, those in a business network have strong ties, while agents have weak ties with their neighbours in the same sector.
     They re-assess what level of adoption is right for them, and change their status accordingly.
     We want to test whether this theory can explain observed adoption patterns.
         
@@ -30,12 +30,6 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
     - Agents auto register with the model when instantiated
     - self.agents is an AgentSet
     - self.agents.shuffle_do("step") is supported
-
-    Attributes:
-        num_agents (int): The number of agents in the model.
-        grid (NetworkGrid): The space in which agents act.
-        running (bool): Whether the model should continue running.
-        datacollector (DataCollector): Collects data for analysis.
     """
     grid: NetworkGrid
     G: nx.Graph
@@ -55,24 +49,27 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
                  obj_net_benefit_min:int, obj_net_benefit_max:int, 
                  init_positive_shift: float,
                  collect_agent_data:bool,
-                 B_min_time:int, C_min_time:int, D_min_time:int, D_constraints:int, cap_first_tick_at:str, 
-                 shock_parameters=None,seed=None, active_shocks=None, debug=True): #_init_ means the model is being intialised
+                 B_min_time:int, C_min_time:int, D_min_time:int, D_constraints:int, B_constraints:int, cap_first_tick_at:str, logit_pivot:float, logit_steepness:float,
+                 shock_parameters=None,seed=None, active_shocks=None, debug=False): #_init_ means the model is being intialised
         super().__init__(seed=seed)  # This *initialises* the parent Model class and sets the random seed
         
-        # Use this for calibration
+        # Use this for calibration in V13
         self.B_min_time = B_min_time
         self.C_min_time = C_min_time
         self.D_min_time = D_min_time
         self.D_constraints = D_constraints
+        self.B_constraints = B_constraints
         self.cap_first_tick_at = cap_first_tick_at
-
-        self.num_agents = int(num_agents) # Makes sure its an integer
-        self.running = True
-        self.debug=bool(debug) # This helps me debug
+        self.logit_pivot = logit_pivot
+        self.logit_steepness = logit_steepness
 
         # Used for calibrating starting distributions of beleifs
         self.init_positive_shift = init_positive_shift
         self.init_barrier_shift = init_positive_shift
+
+        self.num_agents = int(num_agents) # Makes sure its an integer
+        self.running = True
+        self.debug=bool(debug) # This helps me debug
 
         # Exogenous shocks
         self.active_shocks = set(active_shocks) if active_shocks is not None else set() # Should be set in run.py
@@ -169,7 +166,7 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
     def build_network_from_agents(self, agents):
         """
         Build graph from agents using the rule:
-        - strong ties (peer edge) if agents are in the same None network
+        - strong ties (peer edge) if agents are in the same (not None) network
         - weak ties (comeptitor edge) if agents are in the same sector AND region
           otherwise no edge
         """
@@ -322,7 +319,7 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
         delta = max(0.0, min(1.0, efficacy * exposure * sensitivity))
         return max(0.0, min(1.0, base * (1 + delta)))
 
-    # Will add this if I have time... 
+    # I have run out of time to add these... 
     # Learning shocks - those which modify decision rules
     #def businessContactRecommendedIt(self): # One competitor is treated as a peer for one tick 
     #def manyBusinessContactsRecommendedIt(self): # All competitors are treated as a peer for one tick 

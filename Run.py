@@ -2,7 +2,7 @@
 #     Model  - Run                         #
 #     Date: 2026-04-02                     #
 #     Author: Jesse Wise                   #
-#     Purpose: Implementing Pseudocode V2  #
+#     Purpose: V13                         #
 ############################################
 
 # Note: I have used Chat GPT to help me learn how to use Mesa, and to write this code. All errors are my own. 
@@ -13,7 +13,7 @@
 # This file should choose parameters, activate shocks, run the model and plot results.
 
 from Model_NoRealismPullCompInfInc4MotPBonly import AdoptionModel # From the file Model.py, import the AdoptionModel class.
-from Agents_NoRealismPullCompInfInc4MotPBonly import FirmAgent # From the file Agents.py, import the FirmAgent class.
+from Agents_Optimising import FirmAgent # From the file Agents.py, import the FirmAgent class.
 import numpy as np #Has multi-dimensional arrays and matrices. Has a large collection of mathematical functions to operate on these arrays.
 import pandas as pd # Data manipulation and analysis.
 import seaborn as sns # Data visualization tools.
@@ -30,16 +30,22 @@ from collections import Counter
 
 ######################################################################### Running the model #########################################################################
 
-# These parameters will need to be tuned and calibrated: learning_rate, realism_pull_constraints, realism_pull_sociallyInfluencedVars, competitor_inference_increment
-
-T =  30 										# The model runs for 30 years because I have data from 1997 to 2025. 
-N =  500                                        # Set how many agents there are in the model. 
+T =  30 										# The model runs for 30 ticks. 
+N =  1000                                        # Set how many agents there are in the model. 
 
 model = AdoptionModel(
     num_agents= N, 
-    learning_rate = 0.1,									# This is the rate at which firms learn from other firms
-    competitor_inference_increment=0.015, # This is how much an agent's perceived benefits increases or decreases depening on their compeitors adoption stage.
-    init_positive_shift = 0.25,                                  # This is used for calibration of initial distributions of beliefs
+    learning_rate = 0.65,									# This is the rate at which firms learn from other firms
+    competitor_inference_increment=0.04,                    # This represents mimetic isomorphism.
+    init_positive_shift = 0.1,                                  # This is used for calibration of initial distributions of beliefs
+    logit_pivot= 180,
+    logit_steepness=0.04,
+    B_min_time= 2,
+    C_min_time= 2,
+    D_min_time= 4,
+    B_constraints= 2,
+    D_constraints= 3,
+    cap_first_tick_at="D. Has a WTP",
     collect_agent_data= True,
     organisationalReadiness_min= 0.4367,										# This is the organisational readiness threshold, if exceeded they may be able to adopt
     publicTransport_min= 0.5883,										# This is the public transport threshold, if exceeded they may be able to adopt

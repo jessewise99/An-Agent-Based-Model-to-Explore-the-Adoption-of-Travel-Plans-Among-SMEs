@@ -353,7 +353,7 @@ class FirmAgent(Agent):
             (self.model.obj_net_benefit_max - self.model.obj_net_benefit_min) * (
                 (self.next_beliefs["motivations"] - (self.next_beliefs["perceivedBarriers"])))) # estimated net benefit is equal to the minimum plausible net benefit plus a range of plausible net benefit values that depends on the perception of costs and benefits of adoption (which are scaled between 0 and 1). 
                                                                  # If the WTP is perceived as feasible, then:
-        self.next_prob_adoption = 1 / (1 + math.exp(-0.03*(self.next_perceived_net_benefit-126)))          # The logit (sigmoidal) function converts the perceived net benefit into a probability of adoption for a range of NB from 126 to 250. Which is what we want when size does not influence
+        self.next_prob_adoption = 1 / (1 + math.exp(-self.model.logit_steepness*(self.next_perceived_net_benefit-self.model.logit_pivot)))          # The logit (sigmoidal) function converts the perceived net benefit into a probability of adoption for a range of NB from 126 to 250. Which is what we want when size does not influence
                                                  # If a WTP is not perceived as feasible, then the probability of adoption is 0
 
     def probability_to_stage(self, p):

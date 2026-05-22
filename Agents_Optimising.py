@@ -17,13 +17,6 @@ from mesa import Agent  # Using Agent which is more flexible than FixedAgent. Co
 
 class FirmAgent(Agent):
     """An agent representing a firm in the model.
-
-    Attributes:
-        unique_id (int): Unique identifier for the agent.
-        model (AdoptionModel): Reference to the model this agent belongs to.
-        sector, postcode, network, size: Static attributes.
-        beliefs (dict): Subjective and objective beliefs.
-        belief_types (dict): Used to set learning realism pull per belief type.
     """
     resource_min: float
     organisationalReadiness_min: float
@@ -55,30 +48,18 @@ class FirmAgent(Agent):
         "Education",
         "Human health and social work",
         "Arts, entertainment and recreation"]
-        sector_weights=[0.0172, 0.0043, 0.0776, 0.0043, 0.0043, 0.056, 0.0862, 0.0431, 0.0388, 0.0647, 0.0603, 0.0086, 0.1034, 0.0345, 0.0043, 0.1422, 0.1336, 0.1166] # Because of rounding errors I have had to change the numbers slightly to sum to 1
+        sector_weights=[0.0172, 0.0043, 0.0776, 0.0043, 0.0043, 0.056, 0.0862, 0.0431, 0.0388, 0.0647, 0.0603, 0.0086, 0.1034, 0.0345, 0.0043, 0.1422, 0.1336, 0.1166] # Because of rounding errors I have had to change the numbers slightly to sum to 1. This comes from W1 of survey
 
 
         postcode_cats =["East Midlands", "East of England", "London", "North West", "Northern Ireland", "Scotland", "South East", "South West", 
                         "Wales", "West Midlands", "Yorkshire and The Humber"]
-        postcode_weights=[0.056, 0.0905, 0.1853, 0.1078, 0.0259, 0.0603, 0.1853, 0.0819, 0.0431, 0.0862, 0.0777] # Same here
+        postcode_weights=[0.056, 0.0905, 0.1853, 0.1078, 0.0259, 0.0603, 0.1853, 0.0819, 0.0431, 0.0862, 0.0777] # Same here, also comes from W1 of survey
 
         network_cats=[None, "Chamber of Commerce", "FSB","British Assocation for Counselling & Psychotherapy", "Chartered Insurance Institute", "Cleaning & Hygiene Suppliers Assocaiation", "AgeUk", "ASPIRE", "National Care Association", "Road Haulage Association", "Other"] 
-        network_weights=[0.71, 0.02, 0.02,  0.02,  0.02,  0.02, 0.02, 0.02, 0.02, 0.02, 0.11] # Approx 25% are in a network. Often more than one network at a time. For now I start with a simple model where firms are only members of 1 network. Again, to make it sum to 1, I've had to change the proportions slightly.
+        network_weights=[0.71, 0.02, 0.02,  0.02,  0.02,  0.02, 0.02, 0.02, 0.02, 0.02, 0.11] # Approx 25% are in a network. Often more than one network at a time. For now I start with a simple model where firms are only members of 1 network. Again, to make it sum to 1, I've had to change the proportions slightly. Based on empirical data from Survey W1
 
-        # size_cats = ["10-19", "20-49","50-99", "100-249"]
-        # size_weights=[0.16, 0.28, 0.20, 0.36]
-        # self.SIZE_MIDPOINT = {"10-19": 14.5, "20-49": 34.5, "50-99": 74.5, "100-249": 174.5}
-
-        # def draw_size_from_bin(bin_label: str) -> int:
-        #     lo_str, hi_str = bin_label.split("-")
-        #     lo, hi = int(lo_str), int(hi_str)
-        #     # Inclusive on both ends
-        #     return self.model.random.randrange(lo, hi + 1)
-
-        # Static attributes (size, sector, postcode, network memebership draw from survey data distributions)
+        # Static attributes (sector, postcode, network memebership draw from survey data distributions)
         self.time_in_stage = 0 # This is an agent level counter which will be used to add time lags to adoption
-        #self.size_cat = self.model.random.choices(size_cats, weights=size_weights, k=1)[0] # Bin based sampling from your survey distribution
-        #self.size = draw_size_from_bin(self.size_cat)
         self.sector = sector if sector is not None else self.model.random.choices(sector_cats, weights=sector_weights, k=1)[0]
         self.postcode = postcode if postcode is not None else self.model.random.choices(postcode_cats, weights=postcode_weights, k=1)[0]
         self.network = network if network is not None else self.model.random.choices(network_cats, weights=network_weights, k=1)[0]
@@ -86,7 +67,6 @@ class FirmAgent(Agent):
 
         #### Shock sensititvity dictionary - These determine how sensitive the agent is to exogenous shocks.
         sensitivity_cat=["Not at all influential", "Slightly influential",	"Moderately influential",	"Very influential",	"Extremely influential"] # These are the labels that I used in my survey
-
         # Numeric mapping for calculations
         sensitivity_to_value = {
             "Not at all influential": 0.0,
@@ -94,17 +74,17 @@ class FirmAgent(Agent):
             "Moderately influential": 0.5,
             "Very influential": 0.75,
             "Extremely influential": 1.0,
-        } # Here I assign values to them. These are not empirically validated
+        } # Here I assign values to them. These are assumptions and not empirically validated
 
         # These are the distributions of responses to each policy intervention
-        subsidy_weights=[0.03, 0.075, 0.203, 0.346, 0.346]
-        caseStudy_weights=[0.053, 0.1818, 0.3333, 0.303, 0.1288]
-        proofOfROI_weights=[0.015, 0.053, 0.173, 0.444, 0.316]
-        accreditationAward_weights=[0.143, 0.188,0.263,0.301,0.105]
-        policyChampion_weights=[0.145, 0.298, 0.366, 0.153, 0.038]
-        wordOfMouth_weights=[0.145, 0.298, 0.366, 0.153, 0.038] # Need to come back and edit this
+        subsidy_weights=[0.0284, 0.0674, 0.1986, 0.3369, 0.3688]
+        caseStudy_weights=[0.0641, 0.1495, 0.3452, 0.2954, 0.1459]
+        proofOfROI_weights=[0.0071, 0.0532, 0.1986, 0.3936, 0.3475]
+        accreditationAward_weights=[0.1286, 0.2000,0.2750,0.2571,0.1393]
+        policyChampion_weights=[0.1147, 0.2832, 0.3297, 0.1864, 0.0860]
+        wordOfMouth_weights=[0.1273, 0.3127, 0.2582, 0.1927, 0.1091] # Need to come back and edit this
 
-        def tilt_weights(weights, strength, direction="up"):
+        def tilt_weights(weights, strength, direction="up"): # I use this to help calibrate my proxy initilisation beliefs
             idx = np.arange(len(weights))
             if direction == "up":
                 multipliers = np.exp(strength * idx)
@@ -133,7 +113,7 @@ class FirmAgent(Agent):
 
         levels_5 = [0, 0.25, 0.5, 0.75, 1]
 
-        ### Beliefs dictionary - subject to social learning (initial values drawn from plausible uniform distribution (tilted during calibration), but end values should match my survey data)
+        ### Beliefs dictionary - subject to social learning (initial values drawn from proxy measures (tilted during calibration), but end values should match my survey data)
         self.beliefs = {
             "motivations": self.model.random.choices(levels_5, 
                                                      weights=tilt_weights([0.2351, 0.2498, 0.3420, 0.0977, 0.0754], self.model.init_positive_shift, direction="up"))[0], # No logitudinal data so I am estimating it based on the other variables
@@ -200,7 +180,7 @@ class FirmAgent(Agent):
         self.update_prob_adoption()             # Firms update their probability of adoption.
         self.update_adoption_status_FIRSTTICKONLY()           # Their adoption status is updated.
         self.advance()
-        self.store_previous_state()             # So I save the OG values but have calculate adoption status based on values
+        self.store_previous_state()             # So I save the OG values but have calculated adoption status based on values
 
     def step(self):
         self.next_beliefs = self.prev_beliefs.copy() # Start from the previous state as a baseline
@@ -270,9 +250,8 @@ class FirmAgent(Agent):
             # Awareness is a special case as it is binary (0 OR 1)
             if b == "awareness":
                 if any(v == 1 for v in peer_values): # If any peer of theirs is aware
-                    #self.next_beliefs["awareness"] = 1 # then they become aware (this led to a dramatic jump after the first tick which didn't reflect the data)
                     if self.model.random.random() < self.learning_rate_eff:
-                        self.next_beliefs["awareness"] = 1 #Awareness spreads probabilistically based on th elearning rate
+                        self.next_beliefs["awareness"] = 1 #Awareness spreads probabilistically based on the learning rate
                 continue  # Skip the continuous update for awareness
 
             # Continuous beliefs (0 -> 1)
@@ -284,7 +263,8 @@ class FirmAgent(Agent):
                ), 0.0, 1.0)
 
     def update_knowledge_partially(self): 
-        """ Competitor adoption can act as a signal, but only some firms interpret it as evidence of net benefit. My survey sugests 62.9%. Per weak tie, while a weak tie has (or is developing) a plan, these firms infer this as a signal that WTPs are a net benefit. 
+        """ Competitor adoption can act as a signal, but only some firms interpret it as evidence of net benefit. My survey sugests 62.9%. 
+        Per weak tie, while a weak tie has (or is developing) a plan, these firms infer this as a signal that WTPs are a net benefit. 
         Motivations increase and perceived barriers decrease. Once they being to consider developing a plan, it motivates them to increase their feasibility of adoption""" 
         if not self.responds_to_competitor_signal: # If they don't respond to signnals, leave the function early.
             return
@@ -344,24 +324,20 @@ class FirmAgent(Agent):
         
 
     def update_prob_adoption(self):
-        # size_mid = self.SIZE_MIDPOINT.get(self.size_cat) # Get the midpoint of the size bin
-        # if size_mid is None: # For debuggin
-        #     raise ValueError(f"Unknown size category: {self.size}")
-        
-        # Calculate the perceived net benefit of adopting a WTP
+        "# estimated net benefit is equal to the minimum plausible net benefit plus a range of plausible net benefit values that depends on the perception of costs and benefits of adoption (which are scaled between 0 and 1)."
+        "# Then I calculate the perceived net benefit of adopting a WTP. The logit (sigmoidal) function converts the perceived net benefit into a probability of adoption for a range of NB from 126 to 250."
         self.next_perceived_net_benefit = self.model.obj_net_benefit_min + (
             (self.model.obj_net_benefit_max - self.model.obj_net_benefit_min) * (
-                (self.next_beliefs["motivations"] - (self.next_beliefs["perceivedBarriers"])))) # estimated net benefit is equal to the minimum plausible net benefit plus a range of plausible net benefit values that depends on the perception of costs and benefits of adoption (which are scaled between 0 and 1). 
-                                                                 # If the WTP is perceived as feasible, then:
-        self.next_prob_adoption = 1 / (1 + math.exp(-0.03*(self.next_perceived_net_benefit-126)))          # The logit (sigmoidal) function converts the perceived net benefit into a probability of adoption for a range of NB from 126 to 250. Which is what we want when size does not influence
-                                                 # If a WTP is not perceived as feasible, then the probability of adoption is 0
+                (self.next_beliefs["motivations"] - (self.next_beliefs["perceivedBarriers"]))))
+         
+        self.next_prob_adoption = 1 / (1 + math.exp(-self.model.logit_steepness*(self.next_perceived_net_benefit-self.model.logit_pivot)))          
 
     def probability_to_stage(self, p):
         """Map adoption probability to a candidate stage."""
         if p < 0.14:
             return "A. No intention"
         elif p < 0.58:
-            if self.next_numberOfConstraintsMet >= 2:
+            if self.next_numberOfConstraintsMet >= self.model.B_constraints:
                 return "B. May consider"
             else:
                 return "A. No intention"
@@ -377,7 +353,7 @@ class FirmAgent(Agent):
                 return "D. Has a WTP"
             elif self.next_numberOfConstraintsMet >= 3:
                 return "C. Is developing a WTP"
-            elif self.next_numberOfConstraintsMet >= 2:
+            elif self.next_numberOfConstraintsMet >= self.model.B_constraints:
                 return "B. May consider"
             else:
                 return "A. No intention"
@@ -398,7 +374,7 @@ class FirmAgent(Agent):
         old_idx = STAGE_TO_INDEX[old_stage]
         cand_idx = STAGE_TO_INDEX[candidate_stage]
 
-        # Default: move toward candidate, but by at most one stage per tick
+        # Default: move toward candidate stage, but by at most one stage per tick
         if cand_idx > old_idx + 1:
             next_idx = old_idx + 1
         elif cand_idx < old_idx:
@@ -432,16 +408,5 @@ class FirmAgent(Agent):
 
     def update_adoption_status_FIRSTTICKONLY(self):
         """On the first tick we're just updating adoption status based on their beliefs etc, so there should be no time lags."""
-        candidate_stage = self.probability_to_stage(self.next_prob_adoption)
-        # I'm having a problem getting the spread right at the beggining so this is my attempt to spread it out
-        if self.model.cap_first_tick_at== "D. Has a WTP":
-            if candidate_stage == "D. Has a WTP" :
-                self.next_adoption_stage = "C. Is developing a WTP"
-            else:
-                self.next_adoption_stage = candidate_stage
-        elif self.model.cap_first_tick_at== "C. Is developing a WTP":
-            if candidate_stage in {"C. Is developing a WTP", "D. Has a WTP"} :
-                self.next_adoption_stage = "B. May consider"
-            else:
-                self.next_adoption_stage = candidate_stage
+        self.next_adoption_stage = self.probability_to_stage(self.next_prob_adoption)
         self.next_time_in_stage = 0

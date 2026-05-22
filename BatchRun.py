@@ -2,7 +2,7 @@
 #     Model  - Batch Runner                #
 #     Date: 2026-04-08                     #
 #     Author: Jesse Wise                   #
-#     Purpose: Implementing Pseudocode V2  #
+#     Purpose: V13                         #
 ############################################
 
 # Note: I have used Chat GPT to help me learn how to use Mesa, and to write this code. All errors are my own. 
@@ -12,7 +12,6 @@
 # This file is used to run the model. To do so, you must import the model and agents from their respective files.
 # This file should choose parameters, activate shocks, run the model and plot results.
 
-#from Model import AdoptionModel # From the file Model.py, import the AdoptionModel class.
 from Model_NoRealismPullCompInfInc4MotPBonly import AdoptionModel # From the file Model.py, import the AdoptionModel class.
 from Agents_Optimising import FirmAgent # From the file Agents.py, import the FirmAgent class.
 import numpy as np #Has multi-dimensional arrays and matrices. Has a large collection of mathematical functions to operate on these arrays.
@@ -31,23 +30,26 @@ from collections import Counter
 
 ######################################################################### Parameter Sweeps with Batch Runner #########################################################################
 # You need to run data collection and the batch runner too see here https://mesa.readthedocs.io/latest/overview.html
-# These parameters will need to be tuned and calibrated: learning_rate, realism_pull_constraints, realism_pull_sociallyInfluencedVars, competitor_inference_increment
+# These parameters will need to be tuned and calibrated: learning_rate, competitor_inference_increment
 
 T =  30 										# The program runs for 28 years because I have data from 1997 to 2025.
 N =  500                                        # Set how many agents there are in the model. 
 
 #--- Setting the parameters for the batch runner ---
-params = {"learning_rate":  [0.2, 0.3, 0.4],								# This is the rate at which firms learn from other firms
-          "competitor_inference_increment":  [0.02, 0.03, 0.04], # This is how much an agent's perceived benefits increases or decreases depening on their compeitors adoption stage. (at the moment = to learning rate* learning)
-          "init_positive_shift" :0,                                  # This is used for calibration of initial distributions of beliefs
-          "B_min_time": [1, 2],
-          "C_min_time": [1, 2],
-          "D_min_time": [2, 3, 4],
-          "D_constraints": [3, 4],
-          "cap_first_tick_at": ["C. Is developing a WTP", "D. Has a WTP"],
+params = {"learning_rate":  0.65,								# This is the rate at which firms learn from other firms
+          "competitor_inference_increment":  0.04, # This refers to mimetic isomorphism
+          "init_positive_shift" :0.1,                                  # This is used for calibration of initial distributions of beliefs
+         "B_min_time": 2,
+          "C_min_time": 2,
+          "D_min_time": 4,
+          "B_constraints": 2,
+          "D_constraints": 3,
+          "logit_pivot": 180, # This forms part of a function which converts perceived net benefits into a p(adopt) score
+          "logit_steepness":0.04, # Ditto
+        "cap_first_tick_at":"D. Has a WTP",
           "collect_agent_data": False, # False while doing such large sweeps
           ## These are not changing, but I have to pass them in anyway
-          "num_agents": N, # Set how many agents there are in the model. This needs to be <= the number of firms in the data file.
+          "num_agents": N, # Set how many agents there are in the model. 
           "organisationalReadiness_min": 0.4367,										# This is the organisational readiness threshold, if exceeded they may be able to adopt
           "publicTransport_min": 0.5883,										# This is the public transport threshold, if exceeded they may be able to adopt
           "resource_min" :0.5683,										# This is resource threshold, if exceeded they may be able to adopt
@@ -63,7 +65,7 @@ params = {"learning_rate":  [0.2, 0.3, 0.4],								# This is the rate at which 
 results = mesa.batch_run(
      AdoptionModel,
      parameters=params,
-     iterations=5, # The number of iterations to run each parameter combination for. Optional. If not specified, defaults to 1. 10 is the minimum really.
+     iterations=10, # The number of iterations to run each parameter combination for. Optional. If not specified, defaults to 1. 10 is the minimum really. I had been running 5 for my large sweeps.
      max_steps=T, # How many steps to run the model for (needs 28 years @1 ticks per year = 28)
      number_processes=1,
      data_collection_period=1, # The length of the period (number of steps) after which the model and agent reporters collect data. Optional. If not specified, defaults to -1, i.e. only at the end of each episode.
