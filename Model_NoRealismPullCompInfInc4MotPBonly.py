@@ -124,7 +124,14 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
             "Adoption Stage": "adoption_stage",
             "Adoption Probability": "prob_adoption",
             "Perceived Net Benefit": "perceived_net_benefit",
+            "perceivedPeerAdoption": "perceivedPeerAdoption",
             "Awareness": lambda a: a.beliefs["awareness"],
+            "motivations": lambda a: a.beliefs["motivations"],
+            "perceivedBarriers": lambda a: a.beliefs["perceivedBarriers"],
+            "knowledge": lambda a: a.beliefs["knowledge"],
+            "resources": lambda a: a.beliefs["resources"],
+            "organisationalReadiness": lambda a: a.beliefs["organisationalReadiness"],
+            "publicTransport": lambda a: a.beliefs["publicTransport"]
         } if collect_agent_data else None
 
         self.datacollector = DataCollector(
