@@ -50,7 +50,7 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
                  init_positive_shift: float,
                  collect_agent_data:bool,
                  B_min_time:int, C_min_time:int, D_min_time:int, D_constraints:int, B_constraints:int, cap_first_tick_at:str, logit_pivot:float, logit_steepness:float,
-                 shock_parameters=None,seed=None, active_shocks=None, debug=False): #_init_ means the model is being intialised
+                 shock_parameters=None,seed=None, active_shocks=None, debug=False, policy_start_year=None): #_init_ means the model is being intialised
         super().__init__(seed=seed)  # This *initialises* the parent Model class and sets the random seed
         
         # Use this for calibration in V13
@@ -74,6 +74,7 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
         # Exogenous shocks
         self.active_shocks = set(active_shocks) if active_shocks is not None else set() # Should be set in run.py
         self.shock_efficacy = dict(shock_parameters) if shock_parameters is not None else {} # Should be set in run.py
+        self.policy_start_year = policy_start_year, # Used this for future scenario analysis
 
         # Set learning parameters
         self.competitor_inference_increment = competitor_inference_increment
@@ -121,6 +122,10 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
             print("Example agent id:", a0.unique_id, "pos:", a0.pos, "degree:", deg)
 
         agent_reporters = {
+            "sector": "sector",
+            "postcode": "postcode",
+            "size": "size",
+            "network": "network",
             "Adoption Stage": "adoption_stage",
             "Adoption Probability": "prob_adoption",
             "Perceived Net Benefit": "perceived_net_benefit",
@@ -151,11 +156,11 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
         self.datacollector.collect(self)
 
     def step(self): # This defines what happens each tick
-        self.apply_active_shocks() # If you have any active shocks, this step applies them
-
-        # Phase 1: snapshot the start of the tick for every agent
         agents = list(self.agents)
         self.random.shuffle(agents) # This keeps a random order of agents at each tick, but everyone gets a snapshot
+        # Phase 1. Apply shocks, then take a snapshot
+        self.apply_active_shocks() # If you have any active shocks, this step applies them
+
         for agent in agents:
             agent.store_previous_state()
     
@@ -264,8 +269,13 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
                 self.proofOfROI(agent, self.shock_efficacy["proofOfROI"])
 
     ## Perceptual shocks - those which modify internal agents states
-    def caseStudy(self, agent, policy_efficacy):
-        exposure = 1 if agent.beliefs["awareness"] else 0.0 # An agent is exposed if at least one of their connections has a plan (a firm is aware if someone adopts near them (apart from at time step 0))
+    def caseStudy(self, agent, policy_efficacy): # An agent is exposed if at least one of their connections has a plan 
+        neighbours = self.grid.get_neighbors(agent.pos, include_center=False)
+        exposure = any(
+            n.adoption_stage == "D. Has a WTP"
+            for n in neighbours
+        )
+        exposure = float(exposure)
         sensitivity = agent.shock_sensitivity["caseStudy"]["value"]
         delta = policy_efficacy * exposure * sensitivity
         agent.beliefs["knowledge"] = np.clip(agent.beliefs["knowledge"] + delta, 0.0, 1.0)
@@ -325,6 +335,19 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
         sensitivity = agent.shock_sensitivity["accreditationAward"]["value"]
         delta = max(0.0, min(1.0, efficacy * exposure * sensitivity))
         return max(0.0, min(1.0, base * (1 + delta)))
+    
+    # Improvements to Public Transport
+    def infrastructureInvestment(self, exposure = 1.0):
+        base = self.publicTransport_min
+
+        if "infrastructureInvestment" not in self.active_shocks:
+            return base # If infrastructure Investment isn't active use the og value
+
+        efficacy = self.shock_efficacy["infrastructureInvestment"]
+        delta = efficacy * exposure
+        delta = max(0.0, min(1.0, delta))  # Making sure delta is bounded between 0 and 1
+
+        return max(0.0, base * (1 - delta))
 
     # I have run out of time to add these... 
     # Learning shocks - those which modify decision rules
