@@ -32,6 +32,23 @@ STAGE_COLOURS = {
 STAGE_ORDER = list(STAGE_COLOURS.keys())
 
 # ─────────────────────────────────────────────
+#  Fixed calibrated parameters
+#  These are deliberately not exposed in the UI.
+# ─────────────────────────────────────────────
+CALIBRATED_PARAMS = {
+    "init_positive_shift": 0.1,
+    "collect_agent_data": True,
+    "B_min_time": 2,
+    "C_min_time": 2,
+    "D_min_time": 4,
+    "B_constraints": 2,
+    "D_constraints": 3,
+    "cap_first_tick_at": "D. Has a WTP",
+    "logit_pivot": 180,
+    "logit_steepness": 0.04,
+}
+
+# ─────────────────────────────────────────────
 #  Shared reactive state
 # ─────────────────────────────────────────────
 model_ref      = solara.reactive(None)
@@ -74,9 +91,13 @@ def record_step(model):
 # ─────────────────────────────────────────────
 #  Model factory
 # ─────────────────────────────────────────────
-def make_model(n_agents, learning_rate,
-               or_min, pt_min, r_min, k_min,
-               obj_min, obj_max, comp_inc):
+def make_model(
+    n_agents, learning_rate,
+    or_min, pt_min, r_min, k_min,
+    obj_min, obj_max, comp_inc,
+    active_shocks=None,
+    shock_parameters=None,
+):
     return AdoptionModel(
         num_agents=n_agents,
         learning_rate=learning_rate,
@@ -87,14 +108,11 @@ def make_model(n_agents, learning_rate,
         resource_min=r_min,
         knowledge_min=k_min,
         competitor_inference_increment=comp_inc,
-        active_shocks=None,
-        shock_parameters=None,
+        active_shocks=active_shocks,
+        shock_parameters=shock_parameters,
         debug=False,
-        init_positive_shift=0.0,
-        collect_agent_data=True,
+        **CALIBRATED_PARAMS,
     )
-
-
 # ─────────────────────────────────────────────
 #  Network figure
 # ─────────────────────────────────────────────
@@ -377,11 +395,48 @@ def Page():
     obj_max,       set_obj_max       = solara.use_state(250.0)
     comp_inc,      set_comp_inc      = solara.use_state(0.10)
     init_done,     set_init_done     = solara.use_state(False)
+    subsidy_on, set_subsidy_on = solara.use_state(False)
+    case_study_on, set_case_study_on = solara.use_state(False)
+    proof_roi_on, set_proof_roi_on = solara.use_state(False)
+    accreditation_on, set_accreditation_on = solara.use_state(False)
+    policy_champion_on, set_policy_champion_on = solara.use_state(False)
+    subsidy_eff, set_subsidy_eff = solara.use_state(0.2)
+    case_study_eff, set_case_study_eff = solara.use_state(0.2)
+    proof_roi_eff, set_proof_roi_eff = solara.use_state(0.2)
+    accreditation_eff, set_accreditation_eff = solara.use_state(0.2)
+    policy_champion_eff, set_policy_champion_eff = solara.use_state(0.2)
 
     def initialise():
-        m = make_model(n_agents, learning_rate,
-                       or_min, pt_min, r_min, k_min,
-                       obj_min, obj_max, comp_inc)
+        active_shocks = set()
+        shock_parameters = {}
+
+        if subsidy_on:
+            active_shocks.add("subsidy")
+            shock_parameters["subsidy"] = subsidy_eff
+
+        if case_study_on:
+            active_shocks.add("caseStudy")
+            shock_parameters["caseStudy"] = case_study_eff
+
+        if proof_roi_on:
+            active_shocks.add("proofOfROI")
+            shock_parameters["proofOfROI"] = proof_roi_eff
+
+        if accreditation_on:
+            active_shocks.add("accreditationAward")
+            shock_parameters["accreditationAward"] = accreditation_eff
+
+        if policy_champion_on:
+            active_shocks.add("policyChampion")
+            shock_parameters["policyChampion"] = policy_champion_eff
+
+        m = make_model(
+            n_agents, learning_rate,
+            or_min, pt_min, r_min, k_min,
+            obj_min, obj_max, comp_inc,
+            active_shocks=active_shocks,
+            shock_parameters=shock_parameters,
+        )
         record_step(m)   # capture step-0 state
         model_ref.set(m)
         step_count.set(0)
@@ -454,6 +509,32 @@ def Page():
                 slider_row("Public transport access min", pt_min, set_pt_min, 0.0, 1.0, 0.01)
                 slider_row("Resource min", r_min, set_r_min, 0.0, 1.0, 0.01)
                 slider_row("Knowledge min", k_min, set_k_min, 0.0, 1.0, 0.01)
+
+                solara.HTML("div", unsafe_innerHTML=
+                        "<hr style='border-color:#1e2130;margin:8px 0'>"
+                        "<div style='font-size:10px;color:#4b5563;"
+                        "letter-spacing:0.1em;margin-bottom:4px'>POLICY SHOCKS</div>"
+                    )
+
+                solara.Checkbox("Subsidy", value=subsidy_on, on_value=set_subsidy_on)
+                if subsidy_on:
+                    slider_row("Subsidy efficacy", subsidy_eff, set_subsidy_eff, 0.0, 1.0, 0.01)
+
+                solara.Checkbox("Case study", value=case_study_on, on_value=set_case_study_on)
+                if case_study_on:
+                    slider_row("Case study efficacy", case_study_eff, set_case_study_eff, 0.0, 1.0, 0.01)
+
+                solara.Checkbox("Proof of ROI", value=proof_roi_on, on_value=set_proof_roi_on)
+                if proof_roi_on:
+                    slider_row("Proof of ROI efficacy", proof_roi_eff, set_proof_roi_eff, 0.0, 1.0, 0.01)
+
+                solara.Checkbox("Accreditation award", value=accreditation_on, on_value=set_accreditation_on)
+                if accreditation_on:
+                    slider_row("Accreditation efficacy", accreditation_eff, set_accreditation_eff, 0.0, 1.0, 0.01)
+
+                solara.Checkbox("Policy champion", value=policy_champion_on, on_value=set_policy_champion_on)
+                if policy_champion_on:
+                    slider_row("Policy champion efficacy", policy_champion_eff, set_policy_champion_eff, 0.0, 1.0, 0.01)
 
                 with solara.Row(style="align-items:center; gap:8px; width:100%;"):
                     solara.Button("Initialise", on_click=initialise,

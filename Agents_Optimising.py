@@ -344,7 +344,7 @@ class FirmAgent(Agent):
         elif p < 0.79:
             if self.next_numberOfConstraintsMet >= 3:
                 return "C. Is developing a WTP"
-            elif self.next_numberOfConstraintsMet >= 2:
+            elif self.next_numberOfConstraintsMet >= self.model.B_constraints:
                 return "B. May consider"
             else:
                 return "A. No intention"
