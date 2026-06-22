@@ -516,23 +516,23 @@ def Page():
                         "letter-spacing:0.1em;margin-bottom:4px'>POLICY SHOCKS</div>"
                     )
 
-                solara.Checkbox("Subsidy", value=subsidy_on, on_value=set_subsidy_on)
+                solara.Checkbox(label="Subsidy", value=subsidy_on, on_value=set_subsidy_on)
                 if subsidy_on:
                     slider_row("Subsidy efficacy", subsidy_eff, set_subsidy_eff, 0.0, 1.0, 0.01)
 
-                solara.Checkbox("Case study", value=case_study_on, on_value=set_case_study_on)
+                solara.Checkbox(label="Case study", value=case_study_on, on_value=set_case_study_on)
                 if case_study_on:
                     slider_row("Case study efficacy", case_study_eff, set_case_study_eff, 0.0, 1.0, 0.01)
 
-                solara.Checkbox("Proof of ROI", value=proof_roi_on, on_value=set_proof_roi_on)
+                solara.Checkbox(label="Proof of ROI", value=proof_roi_on, on_value=set_proof_roi_on)
                 if proof_roi_on:
                     slider_row("Proof of ROI efficacy", proof_roi_eff, set_proof_roi_eff, 0.0, 1.0, 0.01)
 
-                solara.Checkbox("Accreditation award", value=accreditation_on, on_value=set_accreditation_on)
+                solara.Checkbox(label="Accreditation award", value=accreditation_on, on_value=set_accreditation_on)
                 if accreditation_on:
                     slider_row("Accreditation efficacy", accreditation_eff, set_accreditation_eff, 0.0, 1.0, 0.01)
 
-                solara.Checkbox("Policy champion", value=policy_champion_on, on_value=set_policy_champion_on)
+                solara.Checkbox(label="Policy champion", value=policy_champion_on, on_value=set_policy_champion_on)
                 if policy_champion_on:
                     slider_row("Policy champion efficacy", policy_champion_eff, set_policy_champion_eff, 0.0, 1.0, 0.01)
 
