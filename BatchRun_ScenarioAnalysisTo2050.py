@@ -35,7 +35,7 @@ from collections import Counter
 
 T =  55 										# The program runs for 55 years because now the model runs to 2050
 N =  500                                        # Set how many agents there are in the model.
-N_RUNS= 20 
+N_RUNS= 75 
 
 #- Using these to capture all the policies and their efficacies in one file
 policy_names = [
@@ -55,6 +55,7 @@ scenario_results = []
 for policy in policy_names:
     for efficacy in efficacies:
       for run in range(N_RUNS):
+        print(f"Running {policy}, efficacy={efficacy}, run={run + 1}/{N_RUNS}")
         model = AdoptionModel(
           learning_rate=  0.65,								# This is the rate at which firms learn from other firms
           competitor_inference_increment=  0.04, # This refers to mimetic isomorphism
@@ -91,6 +92,7 @@ for policy in policy_names:
         df["policy"] = policy
         df["efficacy"] = efficacy
         df["RunId"] = run
+        df["policy_start_year"] = policy_start_year
 
         scenario_results.append(df)
 
@@ -99,7 +101,6 @@ for policy in policy_names:
 results_df = pd.concat(scenario_results, ignore_index=True)
 print(f"The results have {len(results_df)} rows.")
 print(f"The columns of the data frame are {list(results_df.keys())}.")
-df["policy_start_year"] = policy_start_year
 
-pyreadr.write_rds("batch_results_ScenarioAnalysis2050_noAgentData.rds", results_df) # Write it to an .rds file so I can analyse it in R.
+pyreadr.write_rds("batch_results_ScenarioAnalysis2050_noAgentData_75iterations.rds", results_df) # Write it to an .rds file so I can analyse it in R.
 print("Finished saving .rds file")

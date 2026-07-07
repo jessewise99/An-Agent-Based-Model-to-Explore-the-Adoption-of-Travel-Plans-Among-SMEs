@@ -1,8 +1,8 @@
 ############################################
 #     Model  - Batch Runner                #
-#     Date: 2026-05-28                     #
+#     Date: 2026-06-24                     #
 #     Author: Jesse Wise                   #
-#     Purpose: Validation                  #
+#     Purpose: Coefficient of Variation    #
 ############################################
 
 # Note: I have used Chat GPT to help me learn how to use Mesa, and to write this code. All errors are my own. 
@@ -31,13 +31,13 @@ from collections import Counter
 ######################################################################### Parameter Sweeps with Batch Runner #########################################################################
 # You need to run data collection and the batch runner too see here https://mesa.readthedocs.io/latest/overview.html
 
-# I now run the model 75 times to take account of stochasticity. I run it for 1 extra tick to take it to 2026. 
+# I now run the model 20 times to take account of stochasticity. I run it for 1 extra tick to take it to 2026. I increase N to 1000 agents to get more stable results.
 
 T =  31 										# The program runs for 31 years because I step the model forward 1 tick.
 N =  500                                        # Set how many agents there are in the model. 
 
 #--- Setting the parameters for the batch runner ---
-params = {"learning_rate":  0.65,								# This is the rate at which firms learn from other firms
+fixed_params = {"learning_rate":  0.65,								# This is the rate at which firms learn from other firms
           "competitor_inference_increment":  0.04, # This refers to mimetic isomorphism
           "init_positive_shift" :0.1,                                  # This is used for calibration of initial distributions of beliefs
          "B_min_time": 2,
@@ -48,7 +48,7 @@ params = {"learning_rate":  0.65,								# This is the rate at which firms learn
           "logit_pivot": 180, # This forms part of a function which converts perceived net benefits into a p(adopt) score
           "logit_steepness":0.04, # Ditto
         "cap_first_tick_at":"D. Has a WTP",
-          "collect_agent_data": True, # False while doing such large sweeps
+          "collect_agent_data": False, # False while doing such large sweeps
           ## These are not changing, but I have to pass them in anyway
           "num_agents": N, # Set how many agents there are in the model. 
           "organisationalReadiness_min": 0.4367,										# This is the organisational readiness threshold, if exceeded they may be able to adopt
@@ -61,22 +61,68 @@ params = {"learning_rate":  0.65,								# This is the rate at which firms learn
           "shock_parameters" : None#{"accreditationAward": 0.25} # These are the strengths of the policies, it needs to be a dictionary. It will look like this {"caseStudy": 0.3, "subsidy": 0.2}
           } 
 
+def run_cv_pilot(
+    model_cls,
+    fixed_params,
+    outcome_col,
+    max_steps=31,
+    batch_sizes=(10, 20, 30, 50, 75, 100, 150, 200),
+    tolerance=0.02
+):
+    max_runs = max(batch_sizes)
 
-#--- Running the batch runner ---
-results = mesa.batch_run(
-     AdoptionModel,
-     parameters=params,
-     iterations=75, # The number of iterations to run each parameter combination for. Optional. If not specified, defaults to 1. 10 is the minimum really. I had been running 5 for my large sweeps.
-     max_steps=T, # How many steps to run the model for (needs 28 years @1 ticks per year = 28) + 1 for validation
-     number_processes=1,
-     data_collection_period=1, # The length of the period (number of steps) after which the model and agent reporters collect data. Optional. If not specified, defaults to -1, i.e. only at the end of each episode.
-     display_progress=True,
- )
+    results = mesa.batch_run(
+        model_cls,
+        parameters=fixed_params,
+        iterations=max_runs,
+        max_steps=max_steps,
+        number_processes=1,
+        data_collection_period=-1,
+        display_progress=True
+    )
+
+    df = pd.DataFrame(results)
+
+    summary = []
+    previous_cv = None
+
+    for n_runs in batch_sizes:
+        df_subset = df.head(n_runs)
+
+        mean_value = df_subset[outcome_col].mean()
+        sd_value = df_subset[outcome_col].std(ddof=1)
+        cv = sd_value / mean_value if mean_value != 0 else np.nan
+
+        change_in_cv = (
+            abs(cv - previous_cv) / previous_cv
+            if previous_cv not in [None, 0]
+            else np.nan
+        )
+
+        summary.append({
+            "n_runs": n_runs,
+            "mean": mean_value,
+            "sd": sd_value,
+            "cv": cv,
+            "relative_change_in_cv": change_in_cv
+        })
+
+        previous_cv = cv
+
+    return pd.DataFrame(summary), df
+
+cv_results, all_runs = run_cv_pilot(
+    model_cls=AdoptionModel,
+    fixed_params=fixed_params,
+    outcome_col="Num_Adopters",
+    max_steps=31,
+    tolerance=0.02
+)
 
 #--- Analysis and visualisation of batch results ---
-results_df = pd.DataFrame(results)
-print(f"The results have {len(results)} rows.")
+results_df = pd.DataFrame(cv_results)
+print(f"The results have {len(cv_results)} rows.")
 print(f"The columns of the data frame are {list(results_df.keys())}.")
 
-pyreadr.write_rds("batch_results_Validation_500Agents_75Iterations.rds", results_df) # Write it to an .rds file so I can analyse it in R.
+pyreadr.write_rds("batch_results_CoeffOfVar_cumulativeRuns.rds", results_df) # Write it to an .rds file so I can analyse it in R.
 print("Finished saving .rds file")

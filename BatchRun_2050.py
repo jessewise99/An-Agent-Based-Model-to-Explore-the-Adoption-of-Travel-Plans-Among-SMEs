@@ -31,9 +31,9 @@ from collections import Counter
 ######################################################################### Parameter Sweeps with Batch Runner #########################################################################
 # You need to run data collection and the batch runner too see here https://mesa.readthedocs.io/latest/overview.html
 
-# I now run the model 75 times to take account of stochasticity. I run it for 1 extra tick to take it to 2026. 
+# I now run the model 20 times to take account of stochasticity. I run it for 1 extra tick to take it to 2026. I increase N to 1000 agents to get more stable results.
 
-T =  31 										# The program runs for 31 years because I step the model forward 1 tick.
+T =  55 										# The program runs for 55 years because I step the model forward 1 tick.
 N =  500                                        # Set how many agents there are in the model. 
 
 #--- Setting the parameters for the batch runner ---
@@ -78,5 +78,5 @@ results_df = pd.DataFrame(results)
 print(f"The results have {len(results)} rows.")
 print(f"The columns of the data frame are {list(results_df.keys())}.")
 
-pyreadr.write_rds("batch_results_Validation_500Agents_75Iterations.rds", results_df) # Write it to an .rds file so I can analyse it in R.
+pyreadr.write_rds("batch_results_2050_500Agents_75Iterations.rds", results_df) # Write it to an .rds file so I can analyse it in R.
 print("Finished saving .rds file")
