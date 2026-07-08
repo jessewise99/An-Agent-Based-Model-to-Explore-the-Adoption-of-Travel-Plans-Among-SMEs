@@ -2,7 +2,7 @@
 #     Model  - Batch Runner                #
 #     Date: 2026-05-28                     #
 #     Author: Jesse Wise                   #
-#     Purpose: Validation                  #
+#     Purpose: Analysis                  #
 ############################################
 
 # Note: I have used Chat GPT to help me learn how to use Mesa, and to write this code. All errors are my own. 
