@@ -166,6 +166,7 @@ class FirmAgent(Agent):
         # Store static thresholds from the model
         self.r_min_eff = self.model.effective_resource_min(self) # calculate their resource min based on whether subsidies are active or not
         self.or_min_eff = self.model.effective_organisationalReadiness_min(self) # calculate their OR based on whether policy champions are active or not
+        self.pt_min_eff = self.model.infrastructureInvestment(self) # calculate their public transport min based on whether infrastructure investment is active or not
         self.r_min = model.resource_min
         self.k_min = model.knowledge_min
         self.or_min = model.organisationalReadiness_min
@@ -189,6 +190,7 @@ class FirmAgent(Agent):
         ### This is used for implementing exogenous shocks
         self.r_min_eff = self.model.effective_resource_min(self) # calculate their resource min based on whether subsidies are active or not
         self.or_min_eff = self.model.effective_organisationalReadiness_min(self) # calculate their OR based on whether policy champions are active or not
+        self.pt_min_eff = self.model.infrastructureInvestment(self) # calculate their public transport min based on whether infrastructure investment is active or not
         self.learning_rate_eff = self.model.effective_learning_rate(self) # caluculate learning rate based on whether accridatiation is on or not
         self.competitor_inference_increment_eff = self.model.effective_competitor_inference_increment(self) # caluculate competitor inference increment based on whether accridatiation is on or not
         
@@ -318,7 +320,7 @@ class FirmAgent(Agent):
             self.next_beliefs["resources"] >= self.r_min_eff,
             self.next_beliefs["knowledge"] >= self.k_min,
             self.next_beliefs["organisationalReadiness"] >= self.or_min_eff,
-            self.next_beliefs["publicTransport"] >= self.pt_min,
+            self.next_beliefs["publicTransport"] >= self.pt_min_eff,
         ])
         return self.next_numberOfConstraintsMet
         

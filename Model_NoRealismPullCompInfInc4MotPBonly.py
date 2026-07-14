@@ -49,8 +49,8 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
                  obj_net_benefit_min:int, obj_net_benefit_max:int, 
                  init_positive_shift: float,
                  collect_agent_data:bool,
-                 B_min_time:int, C_min_time:int, D_min_time:int, D_constraints:int, B_constraints:int, cap_first_tick_at:str, logit_pivot:float, logit_steepness:float,
-                 shock_parameters=None,seed=None, active_shocks=None, debug=False, policy_start_year=None): #_init_ means the model is being intialised
+                 B_min_time:int, C_min_time:int, D_min_time:int, D_constraints:int, B_constraints:int, cap_first_tick_at:str, logit_pivot:float, logit_steepness:float, seed:int|None=None,
+                 shock_parameters=None, active_shocks=None, debug=False, policy_start_year=None): #_init_ means the model is being intialised
         super().__init__(seed=seed)  # This *initialises* the parent Model class and sets the random seed
         
         # Use this for calibration in V13
@@ -344,7 +344,7 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
             return base # If infrastructure Investment isn't active use the og value
 
         efficacy = self.shock_efficacy["infrastructureInvestment"]
-        delta = efficacy * exposure
+        delta = efficacy * exposure # we don't have sensitivity for this one because it wasn't included in the analysis
         delta = max(0.0, min(1.0, delta))  # Making sure delta is bounded between 0 and 1
 
         return max(0.0, base * (1 - delta))
