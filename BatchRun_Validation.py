@@ -58,7 +58,8 @@ params = {"learning_rate":  0.65,								# This is the rate at which firms learn
           "obj_net_benefit_min":	188,					# This is the lower threshold for the net benefits (£) an SME can expect per employee per year, according to the RAS project
           "obj_net_benefit_max" :	250,					# This is the upper threshold for the net benefits (£) an SME can expect per employee per year, according to the RAS project
           "active_shocks" : None, #{"caseStudy", "subsidy"} # These are the policies in effect. Needs to be a set.
-          "shock_parameters" : None#{"accreditationAward": 0.25} # These are the strengths of the policies, it needs to be a dictionary. It will look like this {"caseStudy": 0.3, "subsidy": 0.2}
+          "shock_parameters" : None, #{"accreditationAward": 0.25} # These are the strengths of the policies, it needs to be a dictionary. It will look like this {"caseStudy": 0.3, "subsidy": 0.2}
+          "seed":list(range(100)) # I forgot to do this for calibration, but I thought it was more important to add this for reproducibility. At 100 runs the coeff of var stabilises.
           } 
 
 
@@ -66,7 +67,7 @@ params = {"learning_rate":  0.65,								# This is the rate at which firms learn
 results = mesa.batch_run(
      AdoptionModel,
      parameters=params,
-     iterations=75, # The number of iterations to run each parameter combination for. Optional. If not specified, defaults to 1. 10 is the minimum really. I had been running 5 for my large sweeps.
+     iterations=1, # This is now 1, 1 run for each of the 100 seeds. The number of iterations to run each parameter combination for. Optional. If not specified, defaults to 1. 10 is the minimum really. I had been running 5 for my large sweeps.
      max_steps=T, # How many steps to run the model for (needs 28 years @1 ticks per year = 28) + 1 for validation
      number_processes=1,
      data_collection_period=1, # The length of the period (number of steps) after which the model and agent reporters collect data. Optional. If not specified, defaults to -1, i.e. only at the end of each episode.
@@ -78,5 +79,5 @@ results_df = pd.DataFrame(results)
 print(f"The results have {len(results)} rows.")
 print(f"The columns of the data frame are {list(results_df.keys())}.")
 
-pyreadr.write_rds("batch_results_Validation_500Agents_75Iterations.rds", results_df) # Write it to an .rds file so I can analyse it in R.
+pyreadr.write_rds("batch_results_Validation_500Agents_100Iterations_100setSeed.rds", results_df) # Write it to an .rds file so I can analyse it in R.
 print("Finished saving .rds file")

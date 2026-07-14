@@ -2,7 +2,7 @@
 #     Model  - Batch Runner                #
 #     Date: 2026-06-15                     #
 #     Author: Jesse Wise                   #
-#     Purpose: Analysis                  #
+#     Purpose: Scenario Analysis 1996 to 2025 #
 ############################################
 
 # Note: I have used Chat GPT to help me learn how to use Mesa, and to write this code. All errors are my own. 
@@ -23,6 +23,7 @@ import matplotlib.cm as cm
 import matplotlib.animation as animation
 from matplotlib.figure import Figure
 import mesa
+import random
 import pyreadr # To write an .rds file
 from collections import defaultdict
 from collections import Counter
@@ -35,17 +36,17 @@ from collections import Counter
 
 T =  31 										# The program runs for 31 years because I step the model forward 1 tick.
 N =  500                                        # Set how many agents there are in the model.
-N_RUNS= 75 
+N_RUNS= 100 
 
 #- Using these to capture all the policies and their efficacies in one file
 policy_names = [
+    "infrastructureInvestment",
     "caseStudy",
     "proofOfROI",
     "subsidy",
     "policyChampion",
     "accreditationAward",
-    "infrastructureInvestment",
-]
+    ]
 
 efficacies = [0.05, 0.10, 0.15]
 
@@ -54,8 +55,8 @@ scenario_results = []
 #--- Setting the parameters for the batch runner ---
 for policy in policy_names:
     for efficacy in efficacies:
-      for run in range(N_RUNS):
-        print(f"Running {policy}, efficacy={efficacy}, run={run + 1}/{N_RUNS}") 
+      for seed in range(N_RUNS):
+        print(f"Running {policy}, efficacy={efficacy}, seed={seed + 1}/{N_RUNS}") 
         model = AdoptionModel(
           learning_rate=  0.65,								# This is the rate at which firms learn from other firms
           competitor_inference_increment=  0.04, # This refers to mimetic isomorphism
@@ -68,7 +69,7 @@ for policy in policy_names:
           logit_pivot= 180, # This forms part of a function which converts perceived net benefits into a p(adopt) score
           logit_steepness=0.04, # Ditto
           cap_first_tick_at="D. Has a WTP",
-          collect_agent_data= True, # False while doing such large sweeps
+          collect_agent_data= False, # False while doing such large sweeps
           ## These are not changing, but I have to pass them in anyway
           num_agents= N, # Set how many agents there are in the model. 
           organisationalReadiness_min= 0.4367,										# This is the organisational readiness threshold, if exceeded they may be able to adopt
@@ -77,6 +78,7 @@ for policy in policy_names:
           knowledge_min= 0.4667,									# This is the knowledge threshold, if exceeded they may be able to adopt
           obj_net_benefit_min= 188,					# This is the lower threshold for the net benefits (£) an SME can expect per employee per year, according to the RAS project
           obj_net_benefit_max= 250,					# This is the upper threshold for the net benefits (£) an SME can expect per employee per year, according to the RAS project
+          seed=seed,
           active_shocks= {policy}, # These are the policies in effect. Needs to be a set.
           shock_parameters= {policy: efficacy}# These are the strengths of the policies, it needs to be a dictionary. 
           ) 
@@ -87,7 +89,7 @@ for policy in policy_names:
         df = model.datacollector.get_model_vars_dataframe().reset_index()
         df["policy"] = policy
         df["efficacy"] = efficacy
-        df["RunId"] = run
+        df["Seed"] = seed
 
         scenario_results.append(df)
 
@@ -96,5 +98,5 @@ results_df = pd.concat(scenario_results, ignore_index=True)
 print(f"The results have {len(results_df)} rows.")
 print(f"The columns of the data frame are {list(results_df.keys())}.")
 
-pyreadr.write_rds("batch_results_ScenarioAnalysis_wAgentData_75Iterations.rds", results_df) # Write it to an .rds file so I can analyse it in R.
+pyreadr.write_rds("batch_results_ScenarioAnalysis_woutAgentData_100Iterations.rds", results_df) # Write it to an .rds file so I can analyse it in R.
 print("Finished saving .rds file")

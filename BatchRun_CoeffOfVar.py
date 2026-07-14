@@ -35,6 +35,7 @@ from collections import Counter
 
 T =  31 										# The program runs for 31 years because I step the model forward 1 tick.
 N =  500                                        # Set how many agents there are in the model. 
+batch_sizes=(10, 20, 30, 50, 75, 100, 150, 200)
 
 #--- Setting the parameters for the batch runner ---
 fixed_params = {"learning_rate":  0.65,								# This is the rate at which firms learn from other firms
@@ -71,31 +72,43 @@ def run_cv_pilot(
 ):
     max_runs = max(batch_sizes)
 
+    parameters = {
+        **fixed_params,
+        "seed": list(range(max_runs))
+    }
+
     results = mesa.batch_run(
         model_cls,
-        parameters=fixed_params,
-        iterations=max_runs,
+        parameters=parameters,
+        iterations=1,
         max_steps=max_steps,
         number_processes=1,
         data_collection_period=-1,
         display_progress=True
     )
 
-    df = pd.DataFrame(results)
+    df = pd.DataFrame(results).sort_values("seed").reset_index(drop=True)
 
     summary = []
     previous_cv = None
 
     for n_runs in batch_sizes:
-        df_subset = df.head(n_runs)
+        df_subset = df.iloc[:n_runs]
 
         mean_value = df_subset[outcome_col].mean()
         sd_value = df_subset[outcome_col].std(ddof=1)
-        cv = sd_value / mean_value if mean_value != 0 else np.nan
+
+        cv = (
+            sd_value / mean_value
+            if mean_value != 0
+            else np.nan
+        )
 
         change_in_cv = (
-            abs(cv - previous_cv) / previous_cv
-            if previous_cv not in [None, 0]
+            abs(cv - previous_cv) / abs(previous_cv)
+            if previous_cv is not None
+            and not np.isnan(previous_cv)
+            and previous_cv != 0
             else np.nan
         )
 
@@ -104,7 +117,12 @@ def run_cv_pilot(
             "mean": mean_value,
             "sd": sd_value,
             "cv": cv,
-            "relative_change_in_cv": change_in_cv
+            "relative_change_in_cv": change_in_cv,
+            "below_tolerance": (
+                change_in_cv < tolerance
+                if not np.isnan(change_in_cv)
+                else False
+            )
         })
 
         previous_cv = cv

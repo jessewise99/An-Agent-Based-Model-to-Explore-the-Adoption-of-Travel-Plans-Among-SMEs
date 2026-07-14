@@ -11,7 +11,7 @@ import pyreadr
 
 T = 31
 N = 500
-N_RUNS = 20
+N_RUNS = 100
 
 # Baseline parameters
 baseline_params = {
@@ -38,14 +38,14 @@ sensitivity_results = []
 
 for varied_param, values in sensitivity_values.items():
     for value in values:
-        for run in range(N_RUNS):
+        for seed in range(N_RUNS):
 
             params = baseline_params.copy()
             params[varied_param] = value
 
             print(
                 f"Running {varied_param}={value}, "
-                f"run={run + 1}/{N_RUNS}"
+                f"Run={seed + 1}/{N_RUNS}"
             )
 
             model = AdoptionModel(
@@ -68,6 +68,7 @@ for varied_param, values in sensitivity_values.items():
                 knowledge_min=params["knowledge_min"],
                 obj_net_benefit_min=params["obj_net_benefit_min"],
                 obj_net_benefit_max=params["obj_net_benefit_max"],
+                seed=seed, # I forgot to do this for calibration, but I thought it was more important to add this for reproducibility. At 100 runs the coeff of var stabilises.=
                 active_shocks=None,
                 shock_parameters=None
             )
@@ -77,7 +78,7 @@ for varied_param, values in sensitivity_values.items():
 
             df = model.datacollector.get_model_vars_dataframe().reset_index()
 
-            df["RunId"] = run
+            df["Seed"] = seed
             df["varied_param"] = varied_param
             df["param_value"] = value
 
@@ -90,6 +91,25 @@ results_df = pd.concat(sensitivity_results, ignore_index=True)
 
 print(f"The results have {len(results_df)} rows.")
 print(f"The columns of the data frame are {list(results_df.columns)}.")
+
+run_check = (
+    results_df[
+        ["varied_param", "param_value", "Seed"]
+    ]
+    .drop_duplicates()
+)
+
+print(
+    run_check
+    .groupby(["varied_param", "param_value"])
+    .size()
+)
+
+print(
+    run_check.groupby(
+        ["varied_param", "param_value"]
+    )["Seed"].nunique()
+)
 
 pyreadr.write_rds("batch_results_LocalSensitivityAnalysis.rds", results_df)
 

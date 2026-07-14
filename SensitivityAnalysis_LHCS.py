@@ -28,16 +28,17 @@ from itertools import product
 from scipy.stats import qmc
 import pandas as pd
 import numpy as np
+from tqdm import tqdm
 
-N_SAMPLES = 100     # number of parameter sets
-N_RUNS = 20         # stochastic repeats per set
+N_SAMPLES = 30     # number of parameter sets
+N_RUNS = 100         # stochastic repeats per set
 N=500               # Numgber of agents
-T=31                # Number of sets
+T=31                # Number of years
 
 param_ranges = {
-    "learning_rate": (0.2, 0.8),
-    "competitor_inference_increment": (0.01, 0.4),
-    "logit_pivot": (120, 220),
+    "learning_rate": (0.1, 0.8),
+    "competitor_inference_increment": (0.01, 0.06),
+    "logit_pivot": (160, 210),
     "logit_steepness": (0.02, 0.08),
 }
 
@@ -59,50 +60,61 @@ print(param_sets.head())
 # Enter the sampled parameter sets into my model
 
 results = []
-
-for sample_id, row in param_sets.iterrows():
-
-    for run in range(N_RUNS):
-
-        print(f"Running {row['learning_rate']}, {row['competitor_inference_increment']}, {row['logit_pivot']}, {row['logit_steepness']} run={run + 1}/{N_RUNS}")
-        model = AdoptionModel(
-            learning_rate=row["learning_rate"],
-            competitor_inference_increment=row["competitor_inference_increment"],
-            logit_pivot=row["logit_pivot"],
-            logit_steepness=row["logit_steepness"],
-
-            init_positive_shift=0.1,
-            B_min_time=2,
-            C_min_time=2,
-            D_min_time=4,
-            B_constraints=2,
-            D_constraints=3,
-            cap_first_tick_at="D. Has a WTP",
-            collect_agent_data=False,
-            num_agents=N,
-
-            organisationalReadiness_min=0.4367,
-            publicTransport_min=0.5883,
-            resource_min=0.5683,
-            knowledge_min=0.4667,
-            obj_net_benefit_min=188,
-            obj_net_benefit_max=250,
-            active_shocks=None,
-            shock_parameters=None
+total_runs = N_SAMPLES * N_RUNS
+with tqdm(total=total_runs, desc="Running LHS", unit="run") as progress:
+    for sample_id, row in param_sets.iterrows():
+        progress.set_postfix(
+            sample=f"{sample_id + 1}/{N_SAMPLES}"
         )
 
-        for year in range(T):
-            model.step()
+        for seed in range(N_RUNS):
 
-        df = model.datacollector.get_model_vars_dataframe().reset_index()
+            model = AdoptionModel(
+                learning_rate=row["learning_rate"],
+                competitor_inference_increment=row["competitor_inference_increment"],
+                logit_pivot=row["logit_pivot"],
+                logit_steepness=row["logit_steepness"],
 
-        df["SampleId"] = sample_id
-        df["RunId"] = run
+                init_positive_shift=0.1,
+                B_min_time=2,
+                C_min_time=2,
+                D_min_time=4,
+                B_constraints=2,
+                D_constraints=3,
+                cap_first_tick_at="D. Has a WTP",
+                collect_agent_data=False,
+                num_agents=N,
 
-        for param in param_ranges.keys():
-            df[param] = row[param]
+                organisationalReadiness_min=0.4367,
+                publicTransport_min=0.5883,
+                resource_min=0.5683,
+                knowledge_min=0.4667,
+                obj_net_benefit_min=188,
+                obj_net_benefit_max=250,
+                seed=seed,
+                active_shocks=None,
+                shock_parameters=None
+            )
 
-        results.append(df)
+            for year in range(T):
+                model.step()
+
+            df = (
+                model.datacollector
+                .get_model_vars_dataframe()
+                .tail(1)
+                .reset_index()
+            )
+
+            df["SampleId"] = sample_id
+            df["Seed"] = seed
+            df["RunId"] = sample_id * N_RUNS + seed
+
+            for param in param_ranges.keys():
+                df[param] = row[param]
+
+            results.append(df)
+            progress.update(1)
 
 results_df = pd.concat(results, ignore_index=True)
 

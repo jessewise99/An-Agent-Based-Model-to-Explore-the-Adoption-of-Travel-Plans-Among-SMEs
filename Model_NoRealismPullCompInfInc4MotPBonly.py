@@ -337,7 +337,7 @@ class AdoptionModel(Model): # Everything idented inside the class is part of the
         return max(0.0, min(1.0, base * (1 + delta)))
     
     # Improvements to Public Transport
-    def infrastructureInvestment(self, exposure = 1.0):
+    def effective_publicTransport_min(self, agent, exposure = 1.0):
         base = self.publicTransport_min
 
         if "infrastructureInvestment" not in self.active_shocks:
